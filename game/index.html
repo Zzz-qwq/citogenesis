@@ -1,0 +1,2906 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>已被很多人相信 · 游戏初稿</title>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<style>
+:root{
+  --bg:#F4F3EF; --ink:#2B2B28; --ink2:#5A5A55; --line:#DDDAD2;
+  --platform:#52677F; --fact:#3C8D83; --say:#6D6A9C; --guess:#C3913F;
+  --conflict:#A55252; --todo:#9A9A96; --card:#FFFFFF;
+  --ease-out:cubic-bezier(.16,1,.3,1);
+  --ease-back:cubic-bezier(.34,1.56,.64,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;overflow:hidden}
+.mono{font-family:Consolas,"SF Mono",monospace}
+#stage3d{position:fixed;inset:0;z-index:0}
+#stage3d canvas{display:block}
+#ui{position:fixed;inset:0;z-index:10;display:none;overflow-y:auto}
+.screen{max-width:880px;margin:0 auto;padding:64px 20px 120px;animation:screenIn .5s var(--ease-out)}
+@keyframes screenIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+#progressbar{position:fixed;top:0;left:0;right:0;z-index:40;display:none;
+  background:rgba(244,243,239,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+#progressbar .inner{max-width:880px;margin:0 auto;padding:10px 20px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--ink2)}
+#acttitle{font-weight:600;color:var(--platform);letter-spacing:.08em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:14px 0;
+  box-shadow:0 1px 2px rgba(43,43,40,.05),0 8px 24px rgba(43,43,40,.05)}
+.card.flat{box-shadow:none}
+h2{font-size:22px;margin:6px 0 4px}
+h3{font-size:15px;color:var(--platform);margin:18px 0 8px;letter-spacing:.05em}
+p{line-height:1.85;font-size:15px}
+.muted{color:var(--ink2);font-size:13px;line-height:1.7}
+.quote{border-left:3px solid var(--platform);padding:6px 0 6px 14px;margin:10px 0;color:#3d3d38;background:#FAFAF7;border-radius:0 6px 6px 0}
+.me{color:var(--say);font-style:normal;margin:14px 0;padding:10px 14px;background:#F0EFF7;border-radius:8px;line-height:1.8}
+.btn{display:inline-block;border:1px solid var(--platform);color:var(--platform);background:transparent;
+  padding:8px 18px;border-radius:6px;font-size:14px;cursor:pointer;margin:4px 6px 4px 0;
+  transition:all .2s var(--ease-out);font-family:inherit}
+.btn:hover{background:var(--platform);color:#fff;transform:translateY(-1px);box-shadow:0 4px 12px rgba(82,103,127,.25)}
+.btn.solid{background:var(--platform);color:#fff}
+.btn.solid:hover{background:#41546A}
+.btn.ghost{border-color:var(--line);color:var(--ink2)}
+.btn.warn{border-color:var(--conflict);color:var(--conflict)}
+.btn.warn:hover{background:var(--conflict);color:#fff}
+.btn:focus-visible{outline:2px solid var(--platform);outline-offset:2px}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+.chip{display:inline-block;font-size:12px;padding:2px 10px;border-radius:99px;margin-right:6px;font-weight:600}
+.chip.fact{background:#E3F1EE;color:var(--fact)}
+.chip.say{background:#E9E8F3;color:var(--say)}
+.chip.guess{background:#F6ECD8;color:var(--guess)}
+.chip.todo{background:#ECEDEA;color:#7a7a76;border:1px dashed var(--todo)}
+.chip.conflict{background:#F3E3E3;color:var(--conflict)}
+.stat{font-size:13px;color:var(--ink2);margin:6px 0}
+.divider{height:1px;background:var(--line);margin:22px 0}
+.fadein{animation:fadeIn .45s var(--ease-out) both}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+/* 开场 */
+#prologue{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+  padding-bottom:8vh;pointer-events:none}
+#prologueText{font-size:clamp(18px,2.6vw,26px);color:#3a3a36;text-align:center;line-height:2.2;letter-spacing:.12em;
+  text-shadow:0 1px 0 rgba(255,255,255,.6)}
+#prologueHint{margin-top:26px;font-size:13px;color:var(--ink2);opacity:0;transition:opacity .8s;letter-spacing:.2em}
+#fader{position:fixed;inset:0;background:var(--bg);z-index:60;opacity:0;pointer-events:none;transition:opacity .9s ease}
+#fader.on{opacity:1;pointer-events:all}
+/* 帖子 */
+.posthead{border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:12px}
+.posttitle{font-size:19px;font-weight:700;line-height:1.5}
+.postbody{margin-top:10px;line-height:2}
+.summary{background:#F6F7F9;border:1px solid #E4E7EB;border-radius:8px;padding:12px 14px;margin-top:14px}
+.summary .sumtitle{font-size:12px;color:var(--platform);font-weight:700;letter-spacing:.1em;margin-bottom:6px}
+.srcline{border-left:2px solid var(--line);margin:6px 0 6px 8px;padding:2px 0 2px 12px;font-size:13px;color:var(--ink2);
+  opacity:0;transform:translateX(-8px);transition:all .45s var(--ease-out)}
+.srcline.show{opacity:1;transform:none}
+.srcline.hl{border-color:var(--conflict);color:var(--conflict)}
+/* 评论 */
+.comment{border-top:1px solid var(--line);padding:14px 0}
+.cname{font-weight:700;font-size:14px}
+.cname .likes{color:var(--ink2);font-weight:400;font-size:12px;margin-left:8px}
+.foldnote{font-size:12px;color:var(--todo);background:#F1F1ED;border-radius:6px;padding:6px 10px;margin:8px 0;display:inline-block}
+/* ===== 知乎风评论区（暗色社区页） ===== */
+.zh{background:#12181f;border:1px solid #232c38;border-radius:16px;padding:20px 22px;margin:18px 0;color:#d5dbe3;font-size:14px;text-align:left}
+.zh-link{color:#6ea3e8;cursor:pointer;font-size:13px;margin-right:16px;background:none;border:none;padding:0;font-family:inherit}
+.zh-link:hover{text-decoration:underline}
+.zh-prow{display:flex;gap:10px;align-items:center}
+.zh-ava{width:38px;height:38px;border-radius:50%;background:#2b3a4d;color:#cfe0f5;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;flex-shrink:0}
+.zh-ava.sm{width:30px;height:30px;font-size:12px}
+.zh-name{color:#e8edf3;font-weight:700;font-size:14px}
+.zh-sub{color:#67727f;font-size:12px;font-weight:400}
+.zh-title{color:#eef2f7;font-weight:700;font-size:17px;margin:14px 0 4px}
+.zh-body{color:#c9d1da;line-height:1.9;margin:8px 0;font-size:14px}
+.zh-sum{background:#0d1218;border:1px solid #232c38;border-radius:12px;padding:14px 16px;margin:14px 0}
+.zh-sumtitle{color:#67727f;font-size:12px;margin-bottom:6px}
+.zh .srcline{color:#8d99a8;border-left-color:#2c3644}
+.zh-sec{color:#e8edf3;font-weight:700;font-size:15px;border-top:1px solid #232c38;padding-top:16px;margin-top:6px}
+.zh-head{display:flex;justify-content:space-between;align-items:center;padding:4px 0 12px;border-bottom:1px solid #232c38}
+.zh-tabs .zh-link{margin:0 0 0 16px;color:#67727f}
+.zh-tabs .zh-link.on{color:#6ea3e8;font-weight:700}
+.zh-input{display:flex;gap:10px;align-items:center;padding:14px 0;border-bottom:1px solid #232c38}
+.zh-inputbox{flex:1;background:#0d1218;border:1px solid #232c38;border-radius:99px;padding:9px 16px;color:#67727f;font-size:13px;cursor:pointer;transition:border-color .2s}
+.zh-inputbox:hover{border-color:#4d7fc0}
+.zh-cmt{display:flex;gap:10px;padding:16px 0;border-bottom:1px solid #1d2530}
+.zh-cmt.last{border-bottom:none}
+.zh-cmain{flex:1;min-width:0}
+.zh-ops{display:flex;align-items:center;gap:6px;margin-top:10px;flex-wrap:wrap}
+.zh-pill{border:1px solid #2c3644;background:transparent;color:#9aa7b5;border-radius:99px;padding:4px 14px;font-size:12px;cursor:pointer;font-family:inherit;transition:all .2s}
+.zh-pill:hover{border-color:#4d7fc0;color:#6ea3e8}
+.zh-pill.on{border-color:#4d7fc0;color:#6ea3e8;background:rgba(77,127,192,.14)}
+.zh-pill.big{padding:8px 18px;font-size:13px}
+.zh-op{background:none;border:none;color:#67727f;font-size:12px;cursor:pointer;padding:4px 6px;font-family:inherit;transition:color .2s}
+.zh-op:hover{color:#6ea3e8}
+.zh-op.danger:hover,.zh-op.danger.on{color:#e08080}
+.zh-replies{margin-top:10px}
+.zh-reply{border-left:2px solid #3f6fb4;padding:6px 0 6px 12px;margin-top:8px;animation:fadein .5s}
+.zh-reply p{margin:4px 0 0;color:#c9d1da;line-height:1.8;font-size:13px}
+.zh-rname{color:#e8edf3;font-weight:700;font-size:13px}
+.zh-me{border-left:2px solid #8a6a4a;padding:6px 0 6px 12px;margin-top:10px;color:#a89684;font-style:italic;font-size:13px}
+.zh-foldbar{color:#67727f;font-size:13px;cursor:pointer;padding:13px 0;border-bottom:1px solid #1d2530;transition:color .2s}
+.zh-foldbar:hover{color:#6ea3e8}
+.zh-foldnote{color:#67727f;font-size:12px;padding:10px 0 0}
+.zh-bar{display:flex;gap:10px;border-top:1px solid #232c38;padding-top:16px;margin-top:6px;flex-wrap:wrap}
+.zh-cnt{color:#e8edf3;font-weight:700;font-size:15px}
+.actionbar{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
+.abtn{font-size:12px;border:1px solid var(--line);background:#FBFBF9;border-radius:99px;padding:4px 12px;cursor:pointer;color:var(--ink2);transition:all .2s;font-family:inherit}
+.abtn:hover{border-color:var(--platform);color:var(--platform)}
+.abtn.on{background:var(--platform);color:#fff;border-color:var(--platform)}
+.abtn.danger.on{background:var(--conflict);border-color:var(--conflict)}
+.reply{background:#F7F7F4;border-radius:8px;padding:10px 14px;margin:8px 0 8px 20px;font-size:14px;line-height:1.8;
+  animation:fadeIn .4s var(--ease-out)}
+.reply .rname{font-weight:700;font-size:13px;color:var(--platform)}
+/* 照片查看器 */
+#photowrap{position:relative;margin:16px auto;background:#1a1a18;border-radius:8px;overflow:hidden;
+  box-shadow:0 12px 40px rgba(0,0,0,.25);transition:width 2s var(--ease-out)}
+#photowrap canvas{display:block;width:100%;height:auto}
+/* 热点：取景框角标样式 */
+.hotspot{position:absolute;border:none;border-radius:2px;cursor:pointer;z-index:5;background:transparent;
+  transition:transform .3s;animation:hsPulse 1.9s infinite}
+.hotspot:before{content:"";position:absolute;inset:0;
+  background:
+  linear-gradient(#fff,#fff) top left/13px 2px,linear-gradient(#fff,#fff) top left/2px 13px,
+  linear-gradient(#fff,#fff) top right/13px 2px,linear-gradient(#fff,#fff) top right/2px 13px,
+  linear-gradient(#fff,#fff) bottom left/13px 2px,linear-gradient(#fff,#fff) bottom left/2px 13px,
+  linear-gradient(#fff,#fff) bottom right/13px 2px,linear-gradient(#fff,#fff) bottom right/2px 13px;
+  background-repeat:no-repeat;opacity:.9;filter:drop-shadow(0 0 5px rgba(255,255,255,.55))}
+@keyframes hsPulse{0%,100%{transform:scale(1);opacity:.75}50%{transform:scale(1.14);opacity:1}}
+.hotspot:hover{transform:scale(1.18)}
+.hotspot.seen{animation:none}
+.hotspot.seen:before{opacity:.28;filter:none}
+#photocap{font-size:12px;color:#999;text-align:center;padding:8px;background:#111}
+/* 版本滑块 */
+#vslider{width:100%;margin:18px 0 6px;accent-color:var(--platform)}
+.vlabel{display:flex;justify-content:space-between;font-size:11px;color:var(--ink2)}
+#vtext{min-height:120px;position:relative}
+.vline{transition:opacity .6s ease,filter .6s ease}
+.ghostline{position:absolute;left:20px;right:20px;color:var(--todo);text-decoration:line-through;opacity:.35;filter:blur(.4px);pointer-events:none}
+/* 私信 */
+.dmtabs{display:flex;gap:8px;margin:14px 0}
+.dmtab{flex:1;text-align:center;padding:10px;border:1px solid var(--line);border-radius:8px;cursor:pointer;background:#fff;transition:all .2s;font-size:14px}
+.dmtab.active{border-color:var(--platform);background:#EEF2F6;color:var(--platform);font-weight:700}
+.bubble{max-width:78%;padding:10px 14px;border-radius:14px;margin:8px 0;font-size:14px;line-height:1.8;animation:fadeIn .35s var(--ease-out)}
+.bubble.them{background:#fff;border:1px solid var(--line);border-bottom-left-radius:4px}
+.bubble.me2{background:#E7EEF6;border:1px solid #D4E0EC;margin-left:auto;border-bottom-right-radius:4px}
+.attach{border:1px dashed var(--platform);border-radius:8px;padding:10px 14px;margin:10px 0;cursor:pointer;color:var(--platform);font-size:13px;background:#F8FAFC;transition:all .2s}
+.attach:hover{background:#EEF3F8}
+/* 摘要卡 */
+.sum3{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:14px 0}
+.sumcard{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;transition:all .25s var(--ease-out)}
+.sumcard:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(43,43,40,.10)}
+.sumcard .gap{font-size:12px;color:var(--todo);border-top:1px dashed var(--line);padding-top:8px;margin-top:8px}
+/* 时间线 */
+.tl{position:relative;margin:16px 0 16px 14px;padding-left:22px;border-left:2px solid var(--line)}
+.tl-item{position:relative;padding:6px 0 6px 4px;font-size:14px;animation:fadeIn .4s var(--ease-out) both}
+.tl-item::before{content:"";position:absolute;left:-30px;top:14px;width:10px;height:10px;border-radius:50%;background:var(--platform);border:2px solid var(--bg)}
+.tl-item .t{color:var(--ink2);font-size:12px;margin-right:8px}
+.puzcard{border:1px dashed var(--todo);border-radius:10px;padding:14px 16px;margin:14px 0;background:#FCFCFA;transition:border-color .3s}
+.puzcard.done{border:1px solid var(--fact);background:#F4FAF8}
+.puzcard .ptitle{font-weight:700;font-size:14px;margin-bottom:8px}
+.matcard{display:inline-block;border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 12px;margin:4px;font-size:13px;cursor:pointer;transition:all .2s var(--ease-out);user-select:none}
+.matcard:hover{border-color:var(--platform);transform:translateY(-2px)}
+.matcard.picked{border-color:var(--guess);background:#FBF4E4}
+.matcard.merged{border-color:var(--fact);background:#EDF6F4;cursor:default;transform:none}
+#mergezone{border:2px dashed var(--line);border-radius:10px;min-height:70px;padding:12px;margin-top:10px;text-align:center;color:var(--ink2);font-size:13px;transition:all .3s}
+#mergezone.hot{border-color:var(--platform);background:#F0F4F8}
+/* 发布编辑器 */
+.tpl{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:10px 0;cursor:pointer;background:#fff;transition:all .22s var(--ease-out)}
+.tpl:hover{border-color:var(--platform);box-shadow:0 6px 18px rgba(43,43,40,.08)}
+.tpl.sel{border-color:var(--platform);background:#F5F8FB;box-shadow:0 0 0 1px var(--platform)}
+.tpl .tt{font-weight:700;font-size:15px;margin-bottom:6px}
+.previewbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:18px;margin-top:14px}
+.authortag{display:inline-block;background:var(--platform);color:#fff;font-size:11px;padding:2px 10px;border-radius:4px;margin-top:8px}
+.warnbox{background:#FBF3E4;border:1px solid #E8D9B5;border-radius:8px;padding:10px 14px;font-size:13px;color:#8a6a20;margin:10px 0}
+.checklist{list-style:none;margin:10px 0}
+.checklist li{padding:5px 0 5px 26px;position:relative;font-size:14px;color:var(--ink2)}
+.checklist li::before{content:"";position:absolute;left:2px;top:9px;width:12px;height:12px;border-radius:50%;border:2px solid var(--todo)}
+.checklist li.ok{color:var(--ink)}
+.checklist li.ok::before{background:var(--fact);border-color:var(--fact)}
+/* 结局 */
+.ending-hero{min-height:70vh;display:flex;flex-direction:column;justify-content:center;text-align:center}
+.ending-title{font-size:clamp(26px,5vw,40px);letter-spacing:.2em;margin:18px 0}
+.ending-quote{max-width:640px;margin:20px auto;font-size:17px;line-height:2.2;color:#3d3d38}
+.notif{background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 16px;margin:8px auto;max-width:420px;font-size:14px;box-shadow:0 4px 14px rgba(43,43,40,.08);
+  animation:notifIn .5s var(--ease-back) both}
+@keyframes notifIn{from{opacity:0;transform:translateY(20px) scale(.94)}to{opacity:1;transform:none}}
+.typebox{background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px 18px;max-width:520px;margin:20px auto;text-align:left;font-size:15px;min-height:60px}
+.cursor{display:inline-block;width:2px;height:1.1em;background:var(--platform);vertical-align:-2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.fragwall{position:relative;width:300px;height:300px;margin:24px auto;border-radius:50%;overflow:hidden;background:#E9E7E0;
+  box-shadow:inset 0 0 40px rgba(43,43,40,.12)}
+.frag{position:absolute;background:#fff;border:1px solid var(--line);font-size:9px;color:var(--ink2);display:flex;align-items:center;justify-content:center;text-align:center;padding:2px;cursor:pointer;transition:opacity .6s,transform .6s}
+.frag:hover{border-color:var(--conflict)}
+.fraghole{position:absolute;background:var(--bg);display:flex;align-items:center;justify-content:center}
+.finalwords{font-size:clamp(16px,2.4vw,22px);line-height:2.4;letter-spacing:.15em;margin:30px 0}
+/* 通知 toast */
+#toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:#2B2B28;color:#F4F3EF;
+  padding:10px 22px;border-radius:99px;font-size:13px;opacity:0;transition:all .4s var(--ease-out);z-index:80;pointer-events:none;max-width:86vw;text-align:center}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.sysbox{background:#F0F4F2;border-left:3px solid var(--fact);padding:10px 14px;border-radius:0 8px 8px 0;font-size:13px;color:#33655e;margin:12px 0;line-height:1.8}
+.heartline{font-size:12px;color:var(--ink2);text-align:center;margin-top:30px}
+.btnrow{margin-top:18px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.hint{font-size:12px;color:var(--todo);margin-top:6px}
+/* 第二幕 3D 机房 */
+#serverhint{position:fixed;inset:0;z-index:30;display:none;flex-direction:column;align-items:center;justify-content:flex-end;
+  padding-bottom:10vh;pointer-events:none;text-align:center}
+#serverhint .sh-text{color:#c9d2de;font-size:clamp(15px,2vw,19px);line-height:2.1;letter-spacing:.08em;
+  text-shadow:0 2px 12px rgba(0,0,0,.9);max-width:80vw}
+#serverhint .sh-btn{pointer-events:auto;margin-top:22px;background:rgba(20,26,36,.75);border:1px solid #4a5a70;color:#cfe0f5;
+  padding:10px 26px;border-radius:99px;font-size:14px;cursor:pointer;letter-spacing:.15em;font-family:inherit;
+  transition:all .25s var(--ease-out)}
+#serverhint .sh-btn:hover{background:#2a3648;box-shadow:0 0 24px rgba(110,160,230,.35);transform:translateY(-2px)}
+.winbar{display:flex;justify-content:space-between;align-items:center;gap:10px;background:linear-gradient(180deg,#262b34,#1d2129);
+  color:#cfd6e0;padding:9px 14px;border-radius:10px 10px 0 0;font-size:12px;border:1px solid #14161b;border-bottom:none}
+.winbar .wbt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.winbar .wdot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.winscreen{border:1px solid #14161b;border-top:none;border-radius:0 0 10px 10px;padding:14px;background:#F4F3EF}
+/* ===== Windows 桌面 ===== */
+.windesk{position:fixed;inset:0;z-index:35;overflow:hidden;user-select:none;
+  background:linear-gradient(135deg,#1d3560 0%,#2c5aa0 48%,#3a7bd5 100%);font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+.wglow{position:absolute;border-radius:50%;filter:blur(60px);opacity:.35;pointer-events:none}
+.dic{position:absolute;left:26px;width:88px;text-align:center;color:#fff;font-size:12px;padding:8px 4px 6px;border-radius:4px;cursor:pointer;border:1px solid transparent;line-height:1.35}
+.dic:hover{background:rgba(255,255,255,.12)}
+.dic.sel{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.45)}
+.dicimg{width:42px;height:34px;margin:0 auto 5px;position:relative}
+.dicimg.pc{background:linear-gradient(180deg,#dfe9f5,#b8c8dd);border-radius:3px;border:2px solid #8fa4bd}
+.dicimg.pc::after{content:"";position:absolute;left:14px;bottom:-8px;width:14px;height:8px;background:#8fa4bd}
+.dicimg.bin{background:linear-gradient(180deg,#e8eef5,#c3cfdd);border-radius:2px 2px 5px 5px;border-top:4px solid #9fb2c8}
+.dicimg.jpg{background:#fff;border:2px solid #cfd8e3;border-radius:2px}
+.dicimg.jpg::before{content:"";position:absolute;inset:4px;background:linear-gradient(160deg,#7db3e8 55%,#3f7fbf 56%,#2c5f94);border-radius:1px}
+.dicimg.jpg::after{content:"";position:absolute;left:8px;top:7px;width:7px;height:7px;border-radius:50%;background:#ffd97a}
+.dicimg.note{background:linear-gradient(180deg,#fdf3b8,#f0df8e);border-radius:2px;box-shadow:inset 0 6px 0 rgba(0,0,0,.06)}
+.taskbar{position:absolute;left:0;right:0;bottom:0;height:44px;background:rgba(18,22,29,.94);display:flex;align-items:center;padding:0 10px;z-index:60}
+.tb-btn{color:#fff;font-size:18px;padding:8px 13px;cursor:pointer;border-radius:4px;line-height:1}
+.tb-btn:hover{background:rgba(255,255,255,.12)}
+.tb-app{position:relative;color:#dfe6ee;font-size:12px;padding:7px 12px;margin-left:4px;cursor:pointer;border-radius:4px;display:flex;align-items:center;gap:6px}
+.tb-app:hover{background:rgba(255,255,255,.10)}
+.tb-app .tb-ic{width:14px;height:12px;background:linear-gradient(160deg,#7db3e8 55%,#3f7fbf 56%);border-radius:1px;border:1px solid #cfd8e3}
+.tb-app.active{background:rgba(255,255,255,.16)}
+.tb-app.active::after{content:"";position:absolute;left:10px;right:10px;bottom:1px;height:2px;background:#7db3e8;border-radius:2px}
+.tb-tray{margin-left:auto;color:#fff;font-size:11px;text-align:right;line-height:1.5;padding:2px 6px;cursor:default}
+/* 照片应用（Win11 风格） */
+.photoapp{position:absolute;width:min(880px,78vw);height:min(620px,76vh);left:50%;top:44%;transform:translate(-50%,-50%);
+  background:#1b1b1b;border-radius:8px;box-shadow:0 22px 70px rgba(0,0,0,.6);display:none;flex-direction:column;overflow:hidden;border:1px solid #383838;z-index:40}
+.photoapp.pa-open{animation:paOpen .28s var(--ease-out)}
+@keyframes paOpen{from{opacity:0;transform:translate(-50%,-50%) scale(.92)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.pa-title{display:flex;align-items:center;gap:8px;background:#2d2d2d;color:#e8e8e8;font-size:12px;padding:8px 10px;cursor:move;flex:none}
+.pa-title .pa-thumb{width:16px;height:12px;background:linear-gradient(160deg,#7db3e8 55%,#3f7fbf 56%);border-radius:1px}
+.pa-x{margin-left:auto;display:flex}
+.pa-x button{width:40px;height:26px;border:none;background:transparent;color:#ddd;cursor:pointer;font-size:13px;font-family:inherit}
+.pa-x button:hover{background:#464646}
+.pa-x button.pclose:hover{background:#e81123;color:#fff}
+.pa-tools{display:flex;gap:2px;background:#252525;padding:4px 8px;align-items:center;flex:none;border-bottom:1px solid #161616}
+.pa-tools button{background:transparent;border:none;color:#dcdcdc;font-size:13px;padding:6px 11px;border-radius:4px;cursor:pointer;font-family:inherit}
+.pa-tools button:hover{background:#3c3c3c}
+.pa-tools .pa-sep{width:1px;height:18px;background:#454545;margin:0 6px}
+.pa-tools .pa-lvl{color:#9a9a9a;font-size:12px;margin-left:4px;min-width:38px}
+.pa-main{flex:1;display:flex;min-height:0}
+.pa-body{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;background:#111;padding:16px}
+.pa-info{width:230px;background:#202020;color:#cfcfcf;font-size:12px;padding:16px 14px;border-left:1px solid #333;display:none;flex:none;line-height:2}
+.pa-info b{color:#fff;font-size:13px;display:block;margin-bottom:8px}
+.pa-info span{color:#8f8f8f}
+/* 便签（Sticky Notes 风格） */
+.sticky{position:absolute;right:26px;bottom:60px;width:290px;background:#fdf3b8;border-radius:3px;
+  box-shadow:0 12px 34px rgba(0,0,0,.45);color:#3a3520;z-index:45;font-size:13px}
+.st-head{background:#f2e287;padding:7px 12px;font-size:12px;font-weight:600;display:flex;justify-content:space-between;align-items:center;cursor:move;border-radius:3px 3px 0 0}
+.st-head button{border:none;background:transparent;cursor:pointer;color:#7a6d2a;font-size:13px}
+.st-body{padding:10px 12px;max-height:52vh;overflow-y:auto;line-height:1.7}
+.st-body .btn{font-size:12px;padding:5px 10px;margin:3px 4px 3px 0}
+.st-body .sysbox{font-size:12px}
+.st-body .me{font-size:13px;padding:8px 10px}
+.shutdown{position:fixed;inset:0;background:#0078D7;color:#fff;display:flex;align-items:center;justify-content:center;
+  font-size:24px;letter-spacing:.2em;z-index:70;font-family:"Segoe UI","Microsoft YaHei",sans-serif}
+@media (max-width:760px){.sticky{right:8px;left:8px;width:auto}.photoapp{width:94vw;height:64vh}}
+.winscreen .card{background:#F4F3EF}
+.evtable{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+.evtable th,.evtable td{border:1px solid var(--line);padding:6px 10px;text-align:left;line-height:1.6}
+.evtable th{background:#F2F1EC;font-weight:600}
+.fourcol{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:16px 0;font-size:12px}
+.fourcol>div{background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px;line-height:1.7}
+.fourcol .colh{font-weight:700;color:var(--platform);margin-bottom:6px;font-size:12px}
+@media (max-width:640px){.fourcol{grid-template-columns:1fr 1fr}.bubble{max-width:92%}}
+/* ===== 手机框（拿起后的覆盖层） ===== */
+.ph-overlay{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  padding:4vh 12px 22px;overflow-y:auto;background:rgba(46,39,30,.52);backdrop-filter:blur(7px);animation:fadeIn .35s both}
+.phone{width:min(340px,92vw);margin:0 auto;flex:none;background:linear-gradient(160deg,#3a4048,#181b21);
+  border-radius:46px;padding:11px;box-shadow:0 40px 80px -24px rgba(20,24,32,.7),inset 0 0 0 2px #4a515b;
+  transform:translateY(34px) scale(.94);opacity:0;transition:all .55s cubic-bezier(.22,.9,.3,1)}
+.phone.up{transform:none;opacity:1}
+.ph-scr{position:relative;border-radius:36px;overflow:hidden;background:#0a0d12;
+  height:min(700px,82vh);min-height:480px;display:flex;flex-direction:column}
+.ph-island{position:absolute;top:9px;left:50%;transform:translateX(-50%);width:96px;height:22px;border-radius:12px;background:#05070a;z-index:5}
+.ph-status{position:relative;z-index:4;flex:none;display:flex;justify-content:space-between;align-items:center;
+  padding:11px 24px 4px;color:#d5dbe4;font-size:12px;letter-spacing:.05em;min-height:20px}
+.appscr{position:relative;z-index:2;flex:1;overflow-y:auto;overscroll-behavior:contain;padding-bottom:14px;
+  scrollbar-width:thin;scrollbar-color:#3a4452 transparent}
+.appscr::-webkit-scrollbar{width:5px}
+.appscr::-webkit-scrollbar-thumb{background:#3a4452;border-radius:3px}
+.appscr .zh{margin:0;border-radius:0}
+/* 裂屏玻璃（与序幕3D手机、照片内手机同一道裂纹走向） */
+.ph-crack{position:absolute;inset:0;z-index:6;pointer-events:none;opacity:.24;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 200'%3E%3Cpath d='M58 0 L50 24 L60 42 L46 72 L54 96 L42 132 L48 160' stroke='%23aec2d6' stroke-width='0.9' fill='none'/%3E%3Cpath d='M54 96 L72 116' stroke='%23aec2d6' stroke-width='0.65' fill='none' opacity='0.7'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:58% 0;background-size:52% 100%}
+/* 锁屏 */
+.lockscr{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;align-items:center;
+  background:linear-gradient(180deg,#33405a 0%,#1b2434 46%,#0c1119 100%);
+  transition:transform .62s cubic-bezier(.5,0,.2,1),opacity .62s}
+.lockscr.away{transform:translateY(-104%);opacity:.35}
+.lk-time{margin-top:66px;font-size:62px;font-weight:100;color:#eef2f8;line-height:1;letter-spacing:.02em}
+.lk-date{margin-top:8px;font-size:13px;color:#aeb9c9;letter-spacing:.18em}
+.lk-list{width:86%;margin-top:32px;display:flex;flex-direction:column;gap:10px}
+.lk-notif{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.08);border-radius:16px;
+  padding:11px 14px;animation:lkIn .6s .25s both}
+.lk-notif:nth-child(2){animation-delay:.5s}
+@keyframes lkIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.lk-app{display:flex;justify-content:space-between;font-size:10.5px;color:#93a1b3;letter-spacing:.12em;margin-bottom:5px}
+.lk-text{font-size:12.5px;line-height:1.85;color:#e6ebf2}
+.lk-note .lk-text{color:#f3e7c0}
+.lk-unlock{margin-top:auto;margin-bottom:34px;display:flex;flex-direction:column;align-items:center;gap:5px;
+  color:#c8d2df;font-size:12px;letter-spacing:.32em;cursor:pointer;animation:lkUp 1.7s infinite}
+.lk-unlock .arrow{font-size:17px}
+@keyframes lkUp{0%,100%{transform:translateY(0);opacity:.7}50%{transform:translateY(-7px);opacity:1}}
+.ph-under{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;justify-content:center}
+.ov-notes{width:min(340px,92vw);margin:14px auto 0}
+/* 书桌氛围背景（三/四/五/八幕统一：手机操作都发生在书桌前） */
+.atdesk{margin:-44px -20px -100px;padding:44px 20px 100px;min-height:100vh;
+  background:linear-gradient(180deg,#E9E1D3 0%,#DCCFB9 52%,#C9B696 100%)}
+/* 帖子配图模糊缩略块 */
+.zh-photo{margin:10px 0 4px;cursor:pointer}
+.zh-phimg{height:120px;border-radius:10px;position:relative;overflow:hidden;
+  background:linear-gradient(160deg,#4a4238 0%,#2e2a24 55%,#1c1a16 100%)}
+.zh-phimg:before{content:"";position:absolute;inset:0;
+  background:radial-gradient(circle at 30% 40%,rgba(220,200,160,.28),transparent 42%),
+  radial-gradient(circle at 62% 66%,rgba(140,170,200,.2),transparent 36%)}
+.zh-phimg:after{content:"缩略图太模糊";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:11px;color:#9aa4ae;letter-spacing:.24em}
+.zh-photo span{font-size:11px;color:#6d7784}
+/* ===== 电影过渡 ===== */
+#cine{position:fixed;inset:0;z-index:70;background:#0a0908;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .7s ease}
+#cine.on{opacity:1;pointer-events:all}
+#cine .cine-bar{position:absolute;left:0;right:0;height:7vh;background:#000}
+#cine .cb-t{top:0}#cine .cb-b{bottom:0}
+#cine .cine-act{font-size:clamp(20px,3vw,28px);color:#d8d2c4;letter-spacing:.3em;margin-bottom:18px;
+  opacity:0;transform:translateY(10px);transition:all .9s .2s}
+#cine .cine-sub{font-size:14px;color:#8a8478;letter-spacing:.12em;line-height:2.2;text-align:center;
+  max-width:min(560px,84%);opacity:0;transition:opacity .9s .55s}
+#cine.show-text .cine-act{opacity:1;transform:none}
+#cine.show-text .cine-sub{opacity:1}
+/* ===== 每幕目标提示 ===== */
+.goal{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--platform);background:#EDF1F5;
+  border:1px solid #D5DEE7;border-radius:999px;padding:6px 14px;margin-bottom:14px;letter-spacing:.05em}
+.goal:before{content:"◎";font-size:11px}
+/* ===== 调查笔记 ===== */
+#notebtn{position:fixed;top:14px;right:16px;z-index:46;display:none;align-items:center;gap:7px;
+  background:rgba(250,249,246,.93);border:1px solid var(--line);border-radius:999px;padding:8px 16px;
+  font-size:12.5px;color:var(--ink2);cursor:pointer;box-shadow:0 4px 14px rgba(43,43,40,.10);transition:all .25s}
+#notebtn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(43,43,40,.14)}
+#notebtn .ndot{background:var(--conflict);color:#fff;font-size:10px;min-width:17px;height:17px;border-radius:9px;
+  display:none;align-items:center;justify-content:center;padding:0 4px}
+#notebtn .ndot.show{display:inline-flex}
+#audiobtn{position:fixed;top:14px;right:132px;z-index:46;display:none;align-items:center;justify-content:center;
+  width:36px;height:32px;background:rgba(250,249,246,.93);border:1px solid var(--line);border-radius:999px;
+  font-size:15px;color:var(--ink2);cursor:pointer;box-shadow:0 4px 14px rgba(43,43,40,.10);transition:all .25s}
+#audiobtn:hover{transform:translateY(-1px)}
+#audiobtn.off{color:#b0aca2;text-decoration:line-through}
+#notepanel{position:fixed;top:0;right:0;bottom:0;width:min(360px,88vw);z-index:47;background:var(--card);
+  border-left:1px solid var(--line);box-shadow:-18px 0 44px rgba(43,43,40,.14);transform:translateX(105%);
+  transition:transform .4s var(--ease-out);display:flex;flex-direction:column}
+#notepanel.open{transform:none}
+.np-head{padding:18px 20px 12px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.np-head b{font-size:15px}
+.np-head button{background:none;border:none;font-size:16px;cursor:pointer;color:var(--ink3)}
+.np-list{flex:1;overflow-y:auto;padding:14px 18px}
+.np-item{border-left:3px solid var(--fact);background:#F6F8F7;border-radius:0 8px 8px 0;padding:10px 12px;margin-bottom:10px;animation:fadeIn .4s both}
+.np-item .np-id{font-size:10.5px;letter-spacing:.12em;color:var(--fact);font-weight:700}
+.np-item b{display:block;font-size:13.5px;margin:2px 0 3px}
+.np-item p{font-size:12.5px;color:var(--ink2);line-height:1.75;margin:0}
+.np-empty{text-align:center;color:var(--ink3);font-size:12.5px;margin-top:40px;line-height:2}
+/* ===== 真相分歧点 ===== */
+.forkwrap{max-width:780px;margin:0 auto}
+.forkgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:20px}
+.forkcard{background:#14161c;border:1px solid #2a2f3a;border-radius:14px;padding:18px;cursor:pointer;
+  transition:all .3s;position:relative;overflow:hidden}
+.forkcard:hover{transform:translateY(-3px);border-color:var(--platform);box-shadow:0 14px 30px rgba(20,24,32,.45)}
+.forkcard .fk-line{font-size:10.5px;letter-spacing:.18em;color:#7d8794;margin-bottom:8px}
+.forkcard .fk-q{font-size:15.5px;color:#e8ebf0;line-height:1.7;font-weight:600}
+.forkcard .fk-d{font-size:12px;color:#8a94a2;margin-top:8px;line-height:1.7}
+.forkcard.cur{background:#1c2733;border-color:#3a5a7a}
+@media (max-width:640px){.forkgrid{grid-template-columns:1fr}}
+/* 证据卡（系统界面感） */
+.evcard{background:#10131a;border:1px solid #262c36;border-radius:12px;padding:16px 18px;margin:14px 0;
+  font-size:13.5px;color:#c9d2de;line-height:2}
+.evcard .ev-head{font-size:11px;letter-spacing:.15em;color:#6d7784;margin-bottom:8px}
+.evcard .ev-hl{color:#f0d78a}
+.evcard .ev-row{display:flex;justify-content:space-between;border-bottom:1px dashed #262c36;padding:5px 0;gap:14px}
+.evcard .ev-row:last-child{border-bottom:none}
+/* 视角卡 */
+.povcard{border-radius:12px;padding:16px 18px;margin:12px 0;background:#fbfaf7;border:1px solid var(--line);
+  border-left:4px solid #888;font-size:14px;line-height:2}
+.povcard.pov-cold{border-left-color:#52677F}
+.povcard.pov-bai{border-left-color:#8a6a4a}
+.povcard.pov-zhou{border-left-color:#6a8a6a}
+.povcard .pov-name{font-weight:700;font-size:13px;letter-spacing:.08em;margin-bottom:6px}
+.clash{color:#A34A4A;font-weight:600}
+/* 新结局 CG */
+.cg-mirror{width:min(420px,86vw);height:230px;margin:18px auto;border-radius:14px;position:relative;overflow:hidden;
+  background:linear-gradient(90deg,#14161c 0%,#14161c 49.6%,#3a4250 50%,#14161c 50.4%,#14161c 100%);
+  box-shadow:0 20px 44px rgba(20,24,32,.4)}
+.cg-mirror:before,.cg-mirror:after{content:"";position:absolute;top:52px;width:56px;height:130px;
+  border-radius:28px 28px 8px 8px;background:#05070a}
+.cg-mirror:before{left:calc(50% - 66px)}
+.cg-mirror:after{right:calc(50% - 66px);opacity:.7;filter:blur(1.5px)}
+.cg-mirror .cg-shine{position:absolute;top:0;bottom:0;left:50%;width:1px;
+  background:linear-gradient(180deg,transparent,#8a94a6,transparent)}
+.cg-torn{width:min(460px,88vw);height:180px;margin:18px auto;position:relative}
+.cg-torn .half{position:absolute;top:0;bottom:0;width:52%;
+  background:linear-gradient(160deg,#4a4238,#2e2a24 60%,#1c1a16);box-shadow:0 10px 24px rgba(20,16,10,.35)}
+.cg-torn .h1{left:0;clip-path:polygon(0 0,100% 0,88% 12%,96% 30%,86% 52%,95% 74%,88% 100%,0 100%);
+  transform:rotate(-2deg) translateX(-4px)}
+.cg-torn .h2{right:0;clip-path:polygon(12% 0,100% 0,100% 100%,10% 100%,16% 76%,8% 54%,17% 32%,10% 14%);
+  transform:rotate(2deg) translateX(4px)}
+.cg-trinote{width:min(320px,76vw);height:190px;margin:20px auto;position:relative}
+.cg-trinote .tn{position:absolute;width:132px;height:132px;padding:12px;font-size:11.5px;line-height:1.8;
+  color:#3a352c;box-shadow:0 10px 22px rgba(60,50,30,.28)}
+.cg-trinote .tn1{left:0;top:10px;background:#e8e4da;transform:rotate(-6deg)}
+.cg-trinote .tn2{left:82px;top:30px;background:#f6efd8;transform:rotate(4deg)}
+.cg-trinote .tn3{left:164px;top:6px;background:#dce4ea;transform:rotate(-2deg)}
+/* ===== 第三幕 · 评论现场感 ===== */
+.zh-newbar{display:none;justify-content:center;margin:8px 0}
+.zh-newbar button{background:#1c2733;color:#7fb3e8;border:1px solid #2a4a6a;border-radius:999px;
+  padding:6px 16px;font-size:12px;cursor:pointer;animation:fadeIn .4s}
+.zh-cmt{animation:cmtIn .5s var(--ease-out) both}
+@keyframes cmtIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.like-fly{position:absolute;pointer-events:none;color:#6ea8fe;font-size:12px;font-weight:700;animation:flyUp .9s ease-out both;z-index:9}
+@keyframes flyUp{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-26px)}}
+/* ===== 第四幕 · 版本 diff ===== */
+.vcard-flip{transition:transform .45s var(--ease-out),opacity .45s}
+.vcard-flip.flip{transform:rotateY(7deg) translateX(8px);opacity:.3}
+.diff-add{background:rgba(106,138,106,.22);border-bottom:2px solid #6a8a6a;cursor:pointer;border-radius:3px;padding:0 2px;transition:background .3s}
+.diff-add:hover{background:rgba(106,138,106,.4)}
+.diff-add.found{background:rgba(106,138,106,.5);box-shadow:0 0 0 1px #6a8a6a}
+.changeslot{display:inline-block;min-width:118px;border:1px dashed var(--line);border-radius:8px;padding:6px 10px;
+  font-size:12px;color:var(--ink3);margin:4px 6px 0 0;transition:all .3s}
+.changeslot.lit{border-style:solid;border-color:var(--guess);color:#8a6a2a;background:#FBF6E8}
+/* ===== 第六幕 · 素材分拣台 ===== */
+.sortdesk{background:linear-gradient(180deg,#c2a37c,#a98861);border-radius:16px;padding:18px;
+  box-shadow:inset 0 0 60px rgba(70,45,20,.3),0 18px 40px -18px rgba(80,55,25,.45)}
+.sortpool{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;min-height:64px}
+.sortchip{background:#f6f1df;border:1px solid #d8cfae;border-radius:8px;padding:8px 12px;font-size:12.5px;
+  cursor:pointer;box-shadow:0 3px 8px rgba(70,50,20,.2);transition:all .25s;user-select:none}
+.sortchip:hover{transform:translateY(-2px)}
+.sortchip.sel{outline:2px solid var(--platform);transform:translateY(-3px) rotate(-1deg)}
+.sortchip.placed{opacity:.4;pointer-events:none}
+.sortbins{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.sortbin{background:rgba(250,249,246,.92);border:2px dashed #b8a888;border-radius:12px;min-height:130px;
+  padding:10px;transition:all .25s;cursor:pointer}
+.sortbin.ready{border-color:var(--platform);background:#fff;transform:scale(1.01)}
+.sortbin h4{font-size:12px;margin:0 0 8px;color:var(--ink2)}
+.sortbin .cnt{float:right;color:var(--platform);font-weight:700}
+.sortitem{display:block;background:#fffdf4;border:1px solid #e0d6b8;border-radius:6px;padding:5px 8px;
+  font-size:11.5px;margin-bottom:6px;cursor:pointer;animation:cmtIn .3s}
+.sortitem:hover{border-color:var(--conflict)}
+@media (max-width:640px){.sortbins{grid-template-columns:1fr}}
+/* ===== 第七幕 · 软木证据板 ===== */
+.corkwrap{overflow-x:auto;border-radius:16px}
+.corkboard{position:relative;min-width:780px;min-height:520px;padding:26px;border-radius:6px;
+  background:#b08a5e url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.14'/%3E%3C/svg%3E");
+  box-shadow:inset 0 0 60px rgba(70,45,15,.5),0 20px 40px -18px rgba(80,55,25,.5);border:10px solid #7a5c38}
+.corkpin{position:absolute;background:#fdf6e3;border-radius:3px;padding:9px 10px 8px;font-size:11.5px;width:132px;
+  line-height:1.65;box-shadow:0 6px 12px rgba(60,40,15,.35);cursor:pointer;transition:transform .25s;user-select:none}
+.corkpin:before{content:"";position:absolute;top:-7px;left:50%;transform:translateX(-50%);width:12px;height:12px;
+  border-radius:50%;background:radial-gradient(circle at 35% 30%,#e86a5a,#a33a30);box-shadow:0 2px 4px rgba(0,0,0,.4)}
+.corkpin:hover{transform:scale(1.06) rotate(0deg)!important;z-index:6}
+.corkpin.accuse{border:2px solid #A34A4A;background:#f9e9e4;width:170px}
+.corkpin.hit{outline:3px solid #6a8a6a}
+.corkpin .cp-t{font-weight:700;font-size:10.5px;color:#8a6a4a;display:block;margin-bottom:2px}
+.corksvg{position:absolute;inset:0;pointer-events:none;z-index:5}
+.corkstring{stroke:#A34A4A;stroke-width:2.5;fill:none;opacity:.9}
+.corkstring.ok{stroke:#8a2f2f;stroke-width:3}
+/* ===== 第八幕 · 稿纸与印章 ===== */
+.tpl{background:#fdfbf3;background-image:repeating-linear-gradient(180deg,transparent 0 27px,#ddd6c2 27px 28px);
+  border:1px solid #d0c8b0}
+.tpl.sel{box-shadow:0 0 0 2px var(--platform),0 18px 36px -12px rgba(70,50,20,.35);transform:translateY(-4px)}
+.stamp{width:118px;height:118px;border:5px solid #A34A4A;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;color:#A34A4A;font-weight:700;font-size:16px;letter-spacing:.18em;text-align:center;
+  transform:rotate(-12deg) scale(2.4);opacity:0;margin:12px auto;line-height:1.6;
+  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='r'%3E%3CfeTurbulence baseFrequency='0.12' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23r)' opacity='0.9'/%3E%3C/svg%3E")}
+.stamp.inked{animation:stampIn .55s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes stampIn{0%{opacity:0;transform:rotate(-12deg) scale(2.4)}55%{opacity:1;transform:rotate(-12deg) scale(.94)}75%{transform:rotate(-12deg) scale(1.06)}100%{opacity:1;transform:rotate(-12deg) scale(1)}}
+.papershake{animation:pshake .4s .28s}
+@keyframes pshake{0%,100%{transform:none}30%{transform:translateX(-3px) rotate(-.3deg)}60%{transform:translateX(3px) rotate(.3deg)}}
+/* ===== 追问问题列表 ===== */
+.zh-aq{display:block;width:100%;text-align:left;background:#171c24;border:1px solid #2a3340;color:#c9d2de;
+  border-radius:9px;padding:9px 12px;font-size:12.5px;margin:6px 0;cursor:pointer;transition:all .2s}
+.zh-aq:hover{border-color:#4a6a8a;background:#1c242e}
+.zh-aq.done{opacity:.55}
+/* ===== 第四幕 · 版本时间戳 ===== */
+.vtabs{display:flex;gap:6px;padding:14px 14px 4px}
+.vtab{flex:1;background:#171c24;border:1px solid #2a3340;color:#8a94a2;border-radius:999px;
+  padding:7px 0;font-size:12px;cursor:pointer;transition:all .25s}
+.vtab.on{background:#233246;color:#cfe0f2;border-color:#3a5a7a}
+.vtab:not(.on):hover{color:#c9d2de}
+.vtimeline{height:2px;margin:8px 22px 0;background:linear-gradient(90deg,#2a3340,#3a5a7a,#2a3340)}
+.vbody{padding:16px 18px 8px;color:#d5dbe4;transition:transform .4s var(--ease-out),opacity .4s}
+.vbody.flip{transform:rotateX(6deg) translateY(8px);opacity:.15}
+.vbody .vline{line-height:2.1;font-size:14px}
+.vnote{background:rgba(106,138,106,.13);border-left:3px solid #6a8a6a;border-radius:0 8px 8px 0;
+  padding:9px 12px;margin:10px 0;font-size:12.5px;color:#a8c0a8;line-height:1.9;animation:cmtIn .35s}
+.vnote b{color:#cfe0cf}
+/* ===== 心理状态弹窗 ===== */
+.psy-overlay{position:fixed;inset:0;z-index:48;display:flex;align-items:center;justify-content:center;
+  background:rgba(30,28,24,.45);backdrop-filter:blur(8px);opacity:0;transition:opacity .4s}
+.psy-overlay.on{opacity:1}
+.psy-card{width:min(420px,90vw);background:var(--card);border-radius:16px;padding:26px 24px;
+  box-shadow:0 30px 70px rgba(20,18,14,.4);transform:translateY(16px) scale(.97);transition:transform .4s var(--ease-out)}
+.psy-overlay.on .psy-card{transform:none}
+.psy-q{font-size:15px;line-height:2;margin-bottom:14px}
+.psy-opt{display:block;width:100%;text-align:left;background:#F6F4EE;border:1px solid var(--line);
+  border-radius:10px;padding:12px 14px;font-size:13.5px;margin:8px 0;cursor:pointer;transition:all .2s;color:var(--ink)}
+.psy-opt:hover{border-color:var(--platform);transform:translateX(3px)}
+.psy-opt.sel{border-color:var(--platform);background:#EDF1F5;box-shadow:0 0 0 1px var(--platform)}
+.psy-note{font-size:12px;color:#8a6a2a;margin-top:10px;min-height:18px}
+/* ===== 私信浅色 App 页 ===== */
+.dmwrap{background:#F4F3EF;min-height:100%;padding:12px 12px 20px;border-radius:0}
+/* ===== 序幕叙事按钮 / 意识字幕 ===== */
+#probtns{display:flex;flex-direction:column;align-items:center;gap:12px;pointer-events:none;margin-top:18px}
+.probtn{pointer-events:auto;background:rgba(250,249,246,.88);border:1px solid rgba(82,103,127,.4);color:var(--platform);
+  border-radius:999px;padding:12px 30px;font-size:14.5px;letter-spacing:.14em;cursor:pointer;
+  backdrop-filter:blur(4px);box-shadow:0 8px 24px rgba(60,45,20,.18);transition:all .3s;animation:fadeIn .8s both}
+.probtn:hover{transform:translateY(-2px);background:#fff}
+#mindtext{position:fixed;left:0;right:0;bottom:18vh;z-index:55;text-align:center;pointer-events:none;
+  font-size:clamp(15px,2vw,19px);color:#6a5f4e;letter-spacing:.2em;opacity:0;transition:opacity 1.1s;
+  text-shadow:0 1px 0 rgba(255,255,255,.5)}
+#mindtext.show{opacity:1}
+/* ===== 第一幕 · 桌面场景 ===== */
+.deskscene{position:relative;width:min(700px,96%);margin:6px auto 2px;height:320px;border-radius:20px;overflow:hidden;
+  background:linear-gradient(180deg,#c2a37c 0%,#a98861 60%,#977550 100%);
+  box-shadow:inset 0 0 80px rgba(70,45,20,.4),0 20px 44px -18px rgba(80,55,25,.5)}
+.deskscene:before{content:"";position:absolute;inset:0;opacity:.22;
+  background:repeating-linear-gradient(90deg,rgba(80,55,30,.3) 0 2px,transparent 2px 92px)}
+.ds-light{position:absolute;top:-40px;bottom:-40px;left:36%;width:190px;transform:skewX(-18deg);
+  background:linear-gradient(180deg,rgba(255,196,116,.4),rgba(255,196,116,.06));pointer-events:none}
+.ds-note{position:absolute;left:39%;top:55%;width:150px;padding:10px 12px;transform:rotate(2.5deg);
+  background:linear-gradient(180deg,#f5f2e8,#e9e4d4);box-shadow:0 6px 12px rgba(70,50,20,.3);
+  font-size:12.5px;line-height:1.9;color:#4a4a44;text-align:center}
+.ds-note .ds-fold{position:absolute;right:0;bottom:0;width:0;height:0;
+  border-style:solid;border-width:0 0 22px 22px;border-color:transparent transparent rgba(120,100,70,.28) transparent}
+.ds-note .ds-fold:before{content:"";position:absolute;right:0;bottom:-22px;width:22px;height:22px;
+  background:linear-gradient(135deg,transparent 50%,#d8cfb8 50%);box-shadow:-2px -2px 3px rgba(70,50,20,.15)}
+.ds-cup{position:absolute;left:9%;top:16%;width:72px;height:72px;border-radius:50%;
+  background:radial-gradient(circle at 38% 34%,#f5f2e9,#dcd8cc 72%);
+  box-shadow:0 8px 16px rgba(70,50,20,.4),inset 0 -4px 8px rgba(120,100,70,.25)}
+.ds-cup:before{content:"";position:absolute;inset:12px;border-radius:50%;
+  background:radial-gradient(circle at 40% 35%,#5a4028,#3c2a19 75%)}
+.ds-cup:after{content:"";position:absolute;right:-13px;top:23px;width:18px;height:24px;
+  border:7px solid #e8e4d8;border-left:none;border-radius:0 14px 14px 0}
+.ds-ring{position:absolute;left:19%;top:60%;width:52px;height:52px;border-radius:50%;border:4px solid rgba(120,95,60,.35)}
+.ds-chair{position:absolute;left:50%;bottom:-24px;transform:translateX(-50%);width:150px;height:62px;
+  border-radius:56px 56px 0 0;background:linear-gradient(180deg,#4a3b2c,#33281d);
+  box-shadow:0 -6px 16px rgba(40,28,12,.4)}
+.ds-chair:before{content:"";position:absolute;inset:9px 12px auto;height:10px;border-radius:8px;background:rgba(255,255,255,.06)}
+.ds-phone{position:absolute;left:70%;top:50%;transform:translate(-50%,-50%) rotate(-7deg);width:96px;height:196px;
+  border-radius:22px;background:linear-gradient(155deg,#33383f,#14171c);cursor:pointer;
+  box-shadow:0 16px 30px rgba(50,35,15,.55),inset 0 0 0 2px #454b54;
+  transition:transform .35s var(--ease-out),box-shadow .35s}
+.ds-phone:hover{transform:translate(-50%,-56%) rotate(-7deg);
+  box-shadow:0 24px 38px rgba(50,35,15,.6),inset 0 0 0 2px #5a6572}
+.ds-pscr{position:absolute;inset:7px;border-radius:16px;overflow:hidden;background:linear-gradient(180deg,#232f42,#0d1117)}
+.ds-ptime{position:absolute;top:15px;left:0;right:0;text-align:center;color:#e8ecf2;font-size:19px;font-weight:200;letter-spacing:.06em}
+.ds-pnotif{position:absolute;left:8px;right:8px;top:54px;padding:6px 8px;border-radius:8px;
+  background:rgba(255,255,255,.08);color:#c3ccd8;font-size:8.5px;line-height:1.7}
+.ds-pnotif b{color:#fff}
+.ds-crack{position:absolute;inset:7px;border-radius:16px;pointer-events:none;opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 200'%3E%3Cpath d='M58 0 L50 24 L60 42 L46 72 L54 96 L42 132 L48 160' stroke='%23aec2d6' stroke-width='1.1' fill='none'/%3E%3Cpath d='M54 96 L72 116' stroke='%23aec2d6' stroke-width='0.8' fill='none' opacity='0.7'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:58% 0;background-size:60% 100%}
+.ds-badge{position:absolute;top:-9px;right:-12px;background:#c9473f;color:#fff;font-size:10px;padding:2px 7px;
+  border-radius:11px;box-shadow:0 3px 8px rgba(160,40,30,.5);animation:bdPulse 1.8s infinite;z-index:2}
+@keyframes bdPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.14)}}
+.ds-glow{position:absolute;inset:-16px;border-radius:38px;pointer-events:none;
+  background:radial-gradient(ellipse,rgba(140,180,255,.30),transparent 70%);animation:glowPulse 2.4s infinite}
+@keyframes glowPulse{0%,100%{opacity:.35}50%{opacity:.95}}
+/* ===== 追问草稿条（引导式回复） ===== */
+.zh-draft{border:1px dashed #3f6fb4;border-radius:10px;padding:10px 12px;margin-top:10px;
+  background:rgba(63,111,180,.08);animation:fadeIn .3s var(--ease-out)}
+.zh-dq{color:#e8edf3;font-size:13px;margin:2px 0 8px}
+.zh-typing{color:#8d99a8;font-size:12px}
+.tdots i{animation:tblink 1.2s infinite;display:inline-block;font-style:normal}
+.tdots i:nth-child(2){animation-delay:.2s}.tdots i:nth-child(3){animation-delay:.4s}
+@keyframes tblink{0%,60%,100%{opacity:.2}30%{opacity:1}}
+/* ===== 自绘确认条 ===== */
+.confirmbox{background:#FBF6EA;border:1px solid #E4D6AC;border-radius:10px;padding:14px 16px;margin-top:12px;
+  font-size:14px;line-height:1.8;box-shadow:0 6px 18px rgba(43,43,40,.08)}
+/* ===== 头像配色 ===== */
+.zh-ava.c1{background:#33465e}.zh-ava.c2{background:#3a5e4d}.zh-ava.c3{background:#5e4d3a}.zh-ava.c4{background:#4d3a5e}
+/* ===== 交互微质感 ===== */
+.btn:active{transform:translateY(0) scale(.97);box-shadow:none}
+.zh-pill{user-select:none}
+.zh-pill:active{transform:scale(.94)}
+.zh-cmt{border-radius:10px;margin-left:-8px;margin-right:-8px;padding-left:8px;padding-right:8px;transition:background .2s}
+.zh-cmt:hover{background:rgba(255,255,255,.03)}
+.zh-foldbar{user-select:none}
+.card{transition:box-shadow .25s var(--ease-out)}
+.tpl{user-select:none}
+.sumcard .abtn.on{border-color:var(--guess);color:var(--guess)}
+h2{letter-spacing:.02em}
+</style>
+</head>
+<body>
+<div id="wake"><div class="wk-half wt"></div><div class="wk-half wb"></div><div id="foreword"></div><div id="wakeskip">点 击 跳 过</div></div>
+<div id="stage3d"></div>
+<div id="prologue">
+  <div id="prologueText"></div>
+  <div id="probtns"></div>
+  <div id="prologueHint">点 击 手 机</div>
+</div>
+<div id="progressbar"><div class="inner"><span id="acttitle"></span><span id="actstep" class="mono"></span></div></div>
+<div id="notebtn" onclick="toggleNotes()">调查笔记<span class="ndot" id="cluecount">0</span></div>
+<div id="audiobtn" onclick="toggleAudio()">♪</div>
+<div id="notepanel"><div class="np-head"><b>调查笔记</b><button onclick="toggleNotes()">✕</button></div><div class="np-list" id="nplist"></div></div>
+<div id="mindtext"></div>
+<div id="cine"><div class="cine-bar cb-t"></div><div class="cine-bar cb-b"></div><div class="cine-act"></div><div class="cine-sub"></div></div>
+<div id="serverhint"></div>
+<div id="ui"></div>
+<div id="toast"></div>
+<div id="fader"></div>
+
+<script>
+/* ============================================================
+   《已被很多人相信》 可玩初稿
+   依据：完整分幕剧本 + 美术与交互设计方案
+   ============================================================ */
+var S = {
+  act:0,
+  liked:false, likeRevoked:false, shanwai:false,
+  reported:false, reportRevoked:false, favorited:false,
+  asked:{}, photoSpots:{},
+  photoGuess:null, versionChoice:null, seenVersions:false,
+  dmZhou:false, dmBai:false, seenDiscussion:false, seenFullPhoto:false, seenVideo:false,
+  askOrder:[],
+  pinned:null, puzzles:{p1:false,p2:false,p3:false},
+  checkedInteractions:false, revisitSummary:false, revisitMode:false,
+  clues:[], truthBranch:null, villainChoice:null,
+  newCmtsLoaded:false, foundChanges:{}, sortedItems:{}, watched:{}, askedQ:{},
+  coldFullOpen:false, foldOpen:false, dmFirst:null, cmtSort:"hot",
+  template:null, ending:null, endingsSeen:[]
+};
+function $(id){return document.getElementById(id);}
+function esc(s){return s;}
+var toastTimer=null;
+function toast(msg){
+  var t=$("toast"); t.textContent=msg; t.classList.add("on");
+  clearTimeout(toastTimer); toastTimer=setTimeout(function(){t.classList.remove("on");},2600);
+}
+function fadeTo(fn){
+  var f=$("fader"); f.classList.add("on");
+  setTimeout(function(){ fn(); f.classList.remove("on"); },950);
+}
+function setAct(n,title){
+  S.act=n;
+  actTimers.forEach(function(id){clearTimeout(id);clearInterval(id);});
+  actTimers=[];
+  $("progressbar").style.display="block";
+  $("acttitle").textContent=title;
+  $("actstep").textContent="ACT "+String(n).padStart(2,"0")+" / 09";
+}
+var actTimers=[];
+function later(fn,ms){var id=setTimeout(fn,ms);actTimers.push(id);return id;}
+function every(fn,ms){var id=setInterval(fn,ms);actTimers.push(id);return id;}
+/* 在元素上方飘出 +1 等小字 */
+function flyText(el,txt,color){
+  if(!el)return;
+  var f=document.createElement("span");
+  f.className="like-fly";f.textContent=txt;
+  if(color)f.style.color=color;
+  var host=el;host.style.position="relative";
+  f.style.left="50%";f.style.top="-4px";
+  host.appendChild(f);
+  setTimeout(function(){if(f.parentNode)f.remove();},900);
+}
+function showScreen(html){
+  var ui=$("ui");
+  ui.innerHTML='<div class="screen">'+html+'</div>';
+  ui.scrollTop=0;
+}
+
+/* ================= 序幕：3D 房间 ================= */
+var renderer,scene,camera,room={},clock,steam,dust,mouseX=0,mouseY=0,camZ=7.6,prologueDone=false;
+var waking=false,wakeP=0,wakeDone=false,approaching=false,approachP=0,nearDesk=false;
+var animMode="room";
+function makeNoteTexture(){
+  // 桌上的不是周芮便签（便签只在手机锁屏里）——是一叠改到一半的稿纸
+  var c=document.createElement("canvas");c.width=512;c.height=340;
+  var x=c.getContext("2d");
+  // 底下两张错开的稿纸
+  x.save();x.translate(256,170);x.rotate(-0.06);
+  x.fillStyle="#E4E0D4";x.fillRect(-240,-150,480,300);x.restore();
+  x.save();x.translate(256,170);x.rotate(0.03);
+  x.fillStyle="#EFEBDF";x.fillRect(-240,-150,480,300);x.restore();
+  // 顶纸：写满又被划掉的稿
+  x.fillStyle="#F6F3E9";x.fillRect(16,14,480,306);
+  x.strokeStyle="rgba(0,0,0,0.07)";for(var i=0;i<8;i++){x.beginPath();x.moveTo(40,56+i*32);x.lineTo(470,56+i*32);x.stroke();}
+  x.fillStyle="#4a4a44";x.font="22px 'PingFang SC','Microsoft YaHei',sans-serif";
+  x.fillText("第 7 稿",40,46);
+  x.strokeStyle="rgba(74,74,68,0.75)";x.lineWidth=1.6;
+  for(var l=0;l<5;l++){ // 划掉的段落：波浪线
+    x.beginPath();
+    for(var px=40;px<440;px+=8){x.lineTo(px,86+l*36+Math.sin(px*0.09)*3);}
+    x.stroke();
+  }
+  x.strokeStyle="rgba(163,74,74,0.55)";x.lineWidth=2;
+  x.beginPath();x.moveTo(40,86);x.bezierCurveTo(180,74,340,96,470,82);x.stroke(); // 一道狠划
+  x.fillStyle="rgba(74,74,68,0.5)";x.font="18px 'KaiTi','STKaiti',serif";
+  x.fillText("“很像”，还是“拿走了”？",56,300);
+  var t=new THREE.CanvasTexture(c);return t;
+}
+function makePosterTexture(){
+  var c=document.createElement("canvas");c.width=256;c.height=384;
+  var x=c.getContext("2d");
+  x.fillStyle="#EAE6DB";x.fillRect(0,0,256,384);
+  x.strokeStyle="#52677F";x.lineWidth=6;x.strokeRect(14,14,228,356);
+  x.fillStyle="#52677F";x.font="bold 44px 'PingFang SC','Microsoft YaHei',sans-serif";
+  x.fillText("借来的",48,120);x.fillText("故事",70,178);
+  x.fillStyle="#9A9A96";x.font="18px sans-serif";x.fillText("旧书店 · 朗读分享会",38,250);
+  x.font="14px sans-serif";x.fillText("周二晚 19:00 二楼活动角",36,290);
+  return new THREE.CanvasTexture(c);
+}
+function initRoom(){
+  var w=window.innerWidth,h=window.innerHeight;
+  scene=new THREE.Scene();
+  scene.background=new THREE.Color(0xE3B98E);
+  scene.fog=new THREE.Fog(0xE3B98E,7,20);
+  camera=new THREE.PerspectiveCamera(52,w/h,0.1,100);
+  camera.position.set(0.2,2.3,camZ);
+  renderer=new THREE.WebGLRenderer({antialias:true});
+  renderer.setSize(w,h);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.shadowMap.enabled=true;
+  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  $("stage3d").appendChild(renderer.domElement);
+  clock=new THREE.Clock();
+  // 光：阴天自然光 + 室内暖补光 + 手机冷光
+  var hemi=new THREE.HemisphereLight(0xdde4ec,0x8a857a,0.55);scene.add(hemi);
+  var dir=new THREE.DirectionalLight(0xfff1da,0.95);
+  dir.position.set(-5,7,-2);dir.castShadow=true;
+  dir.shadow.mapSize.set(1024,1024);
+  dir.shadow.camera.left=-6;dir.shadow.camera.right=6;dir.shadow.camera.top=6;dir.shadow.camera.bottom=-6;
+  scene.add(dir);
+  var warm=new THREE.PointLight(0xffd9a8,0.35,10);warm.position.set(2,3,2.5);scene.add(warm);
+  room.phoneGlow=new THREE.PointLight(0x9fc4ff,0,2.2);
+  // 地板
+  var floor=new THREE.Mesh(new THREE.PlaneGeometry(30,30),new THREE.MeshStandardMaterial({color:0xC9C2B2,roughness:0.95}));
+  floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
+  // 后墙
+  var wall=new THREE.Mesh(new THREE.PlaneGeometry(30,12),new THREE.MeshStandardMaterial({color:0xD9D5CA,roughness:1}));
+  wall.position.set(0,6,-4);wall.receiveShadow=true;scene.add(wall);
+  // 窗（发光面 + 框）
+  var winG=new THREE.Group();
+  var glass=new THREE.Mesh(new THREE.PlaneGeometry(2.4,1.7),new THREE.MeshBasicMaterial({color:0xF5F2E8}));
+  winG.add(glass);
+  var frameM=new THREE.MeshStandardMaterial({color:0x6b6558,roughness:0.8});
+  [[-1.24,0,0.08,1.9],[1.24,0,0.08,1.9],[0,0.89,2.6,0.08],[0,-0.89,2.6,0.08],[0,0,0.06,1.7],[0,0,2.4,0.06]].forEach(function(a){
+    var f=new THREE.Mesh(new THREE.BoxGeometry(a[2],a[3],0.06),frameM);
+    f.position.set(a[0],a[1],0.02);winG.add(f);
+  });
+  winG.position.set(-2.2,3.4,-3.95);scene.add(winG);
+  // 窗光斜射体（假体积光：半透明平面）
+  var shaft=new THREE.Mesh(new THREE.PlaneGeometry(2.2,5.2),new THREE.MeshBasicMaterial({color:0xfff6e0,transparent:true,opacity:0.10,side:THREE.DoubleSide,depthWrite:false}));
+  shaft.position.set(-1.4,2.2,-2.2);shaft.rotation.set(0.5,0.25,0.35);scene.add(shaft);
+  // 桌子
+  var tableM=new THREE.MeshStandardMaterial({color:0x9A8468,roughness:0.85});
+  var table=new THREE.Mesh(new THREE.BoxGeometry(4.4,0.16,2.4),tableM);
+  table.position.set(0,1.0,1.0);table.castShadow=true;table.receiveShadow=true;scene.add(table);
+  [[-2,-1],[2,-1],[-2,1],[2,1]].forEach(function(p){
+    var leg=new THREE.Mesh(new THREE.BoxGeometry(0.12,1.0,0.12),tableM);
+    leg.position.set(p[0]*0.95,0.5,1.0+p[1]*1.0);leg.castShadow=true;scene.add(leg);
+  });
+  // 咖啡杯 + 第二圈水痕
+  var cupG=new THREE.Group();
+  var cup=new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.11,0.3,32),new THREE.MeshStandardMaterial({color:0xF2F0EA,roughness:0.35}));
+  cup.castShadow=true;cupG.add(cup);
+  var coffee=new THREE.Mesh(new THREE.CircleGeometry(0.115,32),new THREE.MeshStandardMaterial({color:0x4A3423,roughness:0.4}));
+  coffee.rotation.x=-Math.PI/2;coffee.position.y=0.13;cupG.add(coffee);
+  var handle=new THREE.Mesh(new THREE.TorusGeometry(0.075,0.02,12,24,Math.PI),new THREE.MeshStandardMaterial({color:0xF2F0EA,roughness:0.35}));
+  handle.position.set(0.15,0,0);handle.rotation.z=-Math.PI/2;cupG.add(handle);
+  cupG.position.set(-0.85,1.23,1.15);scene.add(cupG);room.cup=cupG;
+  var ring=new THREE.Mesh(new THREE.TorusGeometry(0.12,0.014,8,40),new THREE.MeshStandardMaterial({color:0x8a7f6a,transparent:true,opacity:0.45,roughness:1}));
+  ring.rotation.x=-Math.PI/2;ring.position.set(-0.45,1.085,0.85);scene.add(ring);
+  // 热气粒子
+  var spGeo=new THREE.BufferGeometry();var N=26;var pos=new Float32Array(N*3);room.steamSeed=[];
+  for(var i=0;i<N;i++){pos[i*3]=0;pos[i*3+1]=0;pos[i*3+2]=0;room.steamSeed.push(Math.random());}
+  spGeo.setAttribute("position",new THREE.BufferAttribute(pos,3));
+  steam=new THREE.Points(spGeo,new THREE.PointsMaterial({color:0xffffff,size:0.045,transparent:true,opacity:0.35,depthWrite:false}));
+  steam.position.set(-0.85,1.42,1.15);scene.add(steam);
+  // 我的椅子（刚被推开，斜在桌前）
+  var chairG=new THREE.Group();
+  var chairM=new THREE.MeshStandardMaterial({color:0x5a4632,roughness:0.8});
+  var seat=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.06,0.5),chairM);
+  seat.position.y=0.55;seat.castShadow=true;chairG.add(seat);
+  var backr=new THREE.Mesh(new THREE.BoxGeometry(0.55,0.62,0.05),chairM);
+  backr.position.set(0,0.95,0.24);backr.castShadow=true;chairG.add(backr);
+  [[-0.24,-0.2],[0.24,-0.2],[-0.24,0.2],[0.24,0.2]].forEach(function(p){
+    var leg=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,0.55,10),chairM);
+    leg.position.set(p[0],0.275,p[1]);chairG.add(leg);
+  });
+  chairG.position.set(0.15,0,2.62);chairG.rotation.y=0.38;scene.add(chairG);
+  // 便笺
+  var note=new THREE.Mesh(new THREE.PlaneGeometry(0.62,0.42),new THREE.MeshStandardMaterial({map:makeNoteTexture(),roughness:0.9}));
+  note.rotation.x=-Math.PI/2;note.rotation.z=0.22;note.position.set(-0.2,1.086,0.6);note.receiveShadow=true;scene.add(note);
+  // 手机（可点击）
+  var phoneG=new THREE.Group();
+  var body=new THREE.Mesh(new THREE.BoxGeometry(0.38,0.035,0.78),new THREE.MeshStandardMaterial({color:0x22242a,roughness:0.4,metalness:0.3}));
+  body.castShadow=true;phoneG.add(body);
+  room.screenMat=new THREE.MeshBasicMaterial({color:0x10151c});
+  var scr=new THREE.Mesh(new THREE.PlaneGeometry(0.33,0.72),room.screenMat);
+  scr.rotation.x=-Math.PI/2;scr.position.y=0.019;phoneG.add(scr);
+  // 裂纹（主裂 Z 字向下 + 一条分叉，与第一幕/手持/照片内手机一致）
+  var crackM=new THREE.LineBasicMaterial({color:0x8fa3b5,transparent:true,opacity:0.7});
+  var crackPts=[new THREE.Vector3(0.09,0.021,0.36),new THREE.Vector3(0.03,0.021,0.22),new THREE.Vector3(0.11,0.021,0.08),new THREE.Vector3(-0.01,0.021,-0.08),new THREE.Vector3(0.06,0.021,-0.2),new THREE.Vector3(-0.05,0.021,-0.34)];
+  phoneG.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(crackPts),crackM));
+  var crackPts2=[new THREE.Vector3(0.06,0.021,-0.2),new THREE.Vector3(0.13,0.021,-0.3)];
+  phoneG.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(crackPts2),crackM));
+  phoneG.position.set(0.75,1.10,0.9);phoneG.rotation.y=-0.5;scene.add(phoneG);
+  room.phone=phoneG;
+  room.phoneGlow.position.set(0.75,1.35,0.9);scene.add(room.phoneGlow);
+  // 墙上海报（呼应第五幕）
+  var poster=new THREE.Mesh(new THREE.PlaneGeometry(0.8,1.2),new THREE.MeshStandardMaterial({map:makePosterTexture(),roughness:0.95}));
+  poster.position.set(2.3,3.1,-3.94);poster.rotation.y=-0.06;scene.add(poster);
+  // 尘埃
+  var dGeo=new THREE.BufferGeometry();var M=90;var dp=new Float32Array(M*3);
+  for(var j=0;j<M;j++){dp[j*3]=(Math.random()-0.5)*8;dp[j*3+1]=Math.random()*5;dp[j*3+2]=Math.random()*6-3;}
+  dGeo.setAttribute("position",new THREE.BufferAttribute(dp,3));
+  dust=new THREE.Points(dGeo,new THREE.PointsMaterial({color:0xfff8e8,size:0.02,transparent:true,opacity:0.5,depthWrite:false}));
+  scene.add(dust);
+  // 交互
+  window.addEventListener("mousemove",function(e){
+    mouseX=(e.clientX/window.innerWidth-0.5);mouseY=(e.clientY/window.innerHeight-0.5);
+  });
+  window.addEventListener("resize",function(){
+    camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth,window.innerHeight);
+  });
+  renderer.domElement.addEventListener("click",function(e){
+    var r=new THREE.Raycaster();var v=new THREE.Vector2(
+      (e.clientX/window.innerWidth)*2-1,-(e.clientY/window.innerHeight)*2+1);
+    r.setFromCamera(v,camera);
+    if(animMode==="room"&&!prologueDone){
+      var hit=r.intersectObjects(room.phone.children,true);
+      if(hit.length){
+        if(nearDesk){pickUpPhone();}
+        else{toast("手机在桌上一闪一闪。先走近书桌。");}
+      }
+      else if(nearDesk){toast("桌面上那部裂屏手机，正在一闪一闪。");}
+    }else if(animMode==="study"){
+      var hit2=r.intersectObjects(study.computer.children,true);
+      if(hit2.length){
+        if(serverArrived&&!booted&&!booting){pressPower();}
+        else{walkToComputer();}
+      }
+    }
+  });
+  foreword();
+  animateRoom();
+}
+var fwTimer=null;
+function foreword(){
+  var lines=[
+    "周一晚上，我在改一篇拖了很久的稿。",
+    "周二，帖子发出去了。<br>后来，它就被很多人相信了。",
+    "周三凌晨之后的事——<br>我不记得了。",
+    "今天，周五。傍晚。"
+  ];
+  var el=$("foreword"),i=0,done=false;
+  function next(){
+    if(done)return;
+    if(i>=lines.length){startWake();return;}
+    el.innerHTML='<div class="fw-line">'+lines[i]+'</div>';i++;
+    fwTimer=setTimeout(next,2300);
+  }
+  next();
+  $("wake").addEventListener("click",function(){
+    startBGM();
+    if(done)return;done=true;clearTimeout(fwTimer);startWake();
+  });
+}
+function startWake(){
+  if(waking)return;waking=true;
+  $("foreword").style.opacity=0;
+  var sk=$("wakeskip");if(sk)sk.style.display="none";
+  var w=$("wake");w.style.pointerEvents="none";
+  var wt=w.querySelector(".wt"),wb=w.querySelector(".wb");
+  // 眨眼序列：[睁开%, 耗时ms]——半睁→合上→再睁→全开，视线由模糊到清晰
+  var seq=[[34,900],[3,420],[64,850],[6,380],[101,1500]],i=0;
+  (function step(){
+    if(i>=seq.length){wakeOpened();return;}
+    var pct=seq[i][0],ms=seq[i][1];
+    wt.style.transition="transform "+ms+"ms cubic-bezier(.5,.05,.3,1)";
+    wb.style.transition="transform "+ms+"ms cubic-bezier(.5,.05,.3,1)";
+    wt.style.transform="translateY(-"+pct+"%)";
+    wb.style.transform="translateY("+pct+"%)";
+    var blur=Math.max(0,7*(1-pct/100));
+    $("stage3d").style.filter=blur>0.4?"blur("+blur+"px) saturate(1.05)":"none";
+    i++;setTimeout(step,ms+90);
+  })();
+}
+function wakeOpened(){
+  $("wake").style.display="none";
+  // 意识逐渐恢复：两句内心独白浮出
+  var mt=$("mindtext");
+  mt.textContent="……头很沉。";mt.classList.add("show");
+  setTimeout(function(){
+    mt.classList.remove("show");
+    setTimeout(function(){
+      mt.textContent="我睡了多久？今天……是周五？";
+      mt.classList.add("show");
+      setTimeout(function(){
+        mt.classList.remove("show");
+        $("probtns").innerHTML='<button class="probtn" onclick="standUp()">撑着桌沿，站起来</button>';
+      },2300);
+    },900);
+  },2400);
+}
+function standUp(){
+  startBGM();
+  $("probtns").innerHTML="";
+  wakeP=0.0001; // animateRoom 站起段
+}
+function approachDesk(){
+  startBGM();
+  $("probtns").innerHTML="";
+  approaching=true;
+}
+function animateRoom(){
+  if(animMode!=="room")return;
+  requestAnimationFrame(animateRoom);
+  var t=clock.getElapsedTime();
+  if(wakeP===0&&!wakeDone&&!approaching){
+    // 醒来前与眨眼期间：伏案低视角，随呼吸微动
+    camera.position.set(0.12+Math.sin(t*0.45)*0.014,1.32+Math.sin(t*0.7)*0.01,3.05);
+    camera.lookAt(0.42,1.1,0.9);
+  }else if(wakeP>0&&wakeP<1){
+    // 撑着桌沿站起：位移与视线双缓动，带一点颈部的晃动感
+    wakeP=Math.min(wakeP+0.0048,1);
+    var e=wakeP<0.5?2*wakeP*wakeP:1-Math.pow(-2*wakeP+2,2)/2;
+    camera.position.set(0.12+0.08*e+Math.sin(wakeP*Math.PI)*0.05,1.32+0.98*e,3.05+2.35*e);
+    camera.lookAt(0.42-0.32*e,1.1+0.05*e,0.9-0.3*e);
+    if(wakeP>=1){camZ=5.4;wakeDone=true;
+      $("probtns").innerHTML='<button class="probtn" onclick="approachDesk()">走近书桌</button>';}
+  }else if(approaching&&approachP<1){
+    // 走近书桌：步近推镜，视线落在那部裂屏手机上
+    approachP=Math.min(approachP+0.006,1);
+    var e2=approachP<0.5?2*approachP*approachP:1-Math.pow(-2*approachP+2,2)/2;
+    camera.position.set(0.2+0.35*e2+Math.sin(approachP*Math.PI*4)*0.018*(1-approachP),2.3-0.5*e2,5.4-2.9*e2);
+    camera.lookAt(0.1+0.65*e2,1.15-0.1*e2,0.6+0.3*e2);
+    if(approachP>=1){nearDesk=true;$("prologueHint").style.opacity=1;}
+  }else if(nearDesk){
+    // 桌前细看：轻微浮动+小视差
+    camera.position.x+=(0.55+mouseX*0.12-camera.position.x)*0.05;
+    camera.position.y+=(1.8-mouseY*0.08-camera.position.y)*0.05;
+    camera.position.z=2.5;
+    camera.lookAt(0.75,1.05,0.9);
+  }else{
+    // 平常：缓慢推近 + 鼠标视差
+    if(!prologueDone&&camZ>5.1)camZ+=(5.1-camZ)*0.012;
+    camera.position.z=camZ;
+    camera.position.x+=((0.2+mouseX*0.5)-camera.position.x)*0.04;
+    camera.position.y+=((2.3-mouseY*0.35)-camera.position.y)*0.04;
+    camera.lookAt(0.1,1.15,0.6);
+  }
+  // 手机屏幕呼吸脉冲
+  var pulse=(Math.sin(t*2.2)*0.5+0.5);
+  var base=prologueDone?0.9:0.12;
+  room.screenMat.color.setRGB(0.06+base*pulse*0.55,0.09+base*pulse*0.75,0.13+base*pulse);
+  room.phoneGlow.intensity=base*pulse*0.9;
+  // 热气上升（带横向漂移与重力无关的浮力感）
+  var arr=steam.geometry.attributes.position.array;
+  for(var i=0;i<arr.length/3;i++){
+    var s=room.steamSeed[i];
+    var y=((t*0.14+s*1.2)%1.2);
+    arr[i*3]=Math.sin((t+s*9)*1.6)*0.03;
+    arr[i*3+1]=y;
+    arr[i*3+2]=Math.cos((t+s*7)*1.3)*0.03;
+  }
+  steam.geometry.attributes.position.needsUpdate=true;
+  steam.material.opacity=0.32;
+  // 尘埃缓浮
+  dust.rotation.y=t*0.012;
+  dust.position.y=Math.sin(t*0.24)*0.08;
+  renderer.render(scene,camera);
+}
+function pickUpPhone(){
+  startBGM();
+  prologueDone=true;
+  $("prologueHint").style.opacity=0;
+  // 手机点亮 → 白场 → 进入第一幕
+  fadeTo(function(){
+    $("stage3d").style.display="none";
+    $("prologue").style.display="none";
+    $("ui").style.display="block";
+    renderAct1(false);
+  });
+}
+
+/* ================= 公共小部件 ================= */
+function chipHTML(t){
+  var map={fact:["fact","记录可确认"],say:["say","他人陈述"],guess:["guess","我的推测"],todo:["todo","待核实"],conflict:["conflict","来源冲突"]};
+  var m=map[t];return '<span class="chip '+m[0]+'">'+m[1]+'</span>';
+}
+/* 电影过渡：黑场+幕标题+过渡句，替代生硬的场景直跳 */
+function cineTo(actTitle,sub,fn){
+  var c=$("cine");
+  c.querySelector(".cine-act").textContent=actTitle;
+  c.querySelector(".cine-sub").innerHTML=sub;
+  c.classList.add("on");
+  setTimeout(function(){c.classList.add("show-text");},80);
+  setTimeout(function(){
+    fn();
+    setTimeout(function(){
+      c.classList.remove("show-text");
+      c.classList.remove("on");
+    },450);
+  },2100);
+}
+/* 调查笔记：线索不直接怼脸，玩家主动翻阅 */
+function gainClue(id,title,text){
+  if(S.clues.some(function(c){return c.id===id;}))return;
+  S.clues.push({id:id,title:title,text:text});
+  var d=$("cluecount");d.textContent=S.clues.length;d.classList.add("show");
+  toast("新线索已记入调查笔记（右上角可翻阅）");
+}
+function toggleNotes(){
+  var p=$("notepanel");p.classList.toggle("open");
+  if(p.classList.contains("open"))renderNotes();
+}
+function renderNotes(){
+  var l=$("nplist");
+  if(!S.clues.length){l.innerHTML='<div class="np-empty">还没有收集到线索。<br>随着调查推进，值得核对的事实会记在这里。</div>';return;}
+  l.innerHTML=S.clues.map(function(c){
+    return '<div class="np-item"><div class="np-id">线索 '+c.id+'</div><b>'+c.title+'</b><p>'+c.text+'</p></div>';
+  }).join("");
+}
+function blurPhotoHint(){
+  toast("手机屏幕上看不真切。原文件在书房的电脑里。");
+}
+/* ================= 音频系统 ================= */
+var AU={bgm:null,boot:null,shut:null,on:true,started:false};
+function initAudio(){
+  AU.bgm=new Audio("assets/audio/bgm_main.wav");AU.bgm.loop=true;AU.bgm.volume=0;
+  AU.boot=new Audio("assets/audio/sfx_boot.wav");AU.boot.volume=0.75;
+  AU.shut=new Audio("assets/audio/sfx_shutdown.wav");AU.shut.volume=0.75;
+}
+function startBGM(){
+  if(AU.started||!AU.on||!AU.bgm)return;
+  AU.started=true;
+  var p=AU.bgm.play();
+  if(p&&p.catch)p.catch(function(){AU.started=false;}); // 尚无手势，下个手势再试
+  fadeBgm(0.32,3200);
+}
+function fadeBgm(target,ms){
+  var steps=32,cur=AU.bgm.volume,i=0;
+  var iv=setInterval(function(){
+    i++;var v=cur+(target-cur)*i/steps;
+    AU.bgm.volume=Math.min(1,Math.max(0,v));
+    if(i>=steps)clearInterval(iv);
+  },ms/steps);
+}
+function toggleAudio(){
+  AU.on=!AU.on;
+  var b=$("audiobtn");
+  b.className=AU.on?"":"off";
+  b.textContent=AU.on?"♪":"♪";
+  if(AU.on){startBGM();}else if(AU.bgm){AU.bgm.pause();AU.started=false;}
+}
+function playSfx(a){
+  if(!AU.on||!a)return;
+  a.currentTime=0;
+  var p=a.play();if(p&&p.catch)p.catch(function(){});
+}
+
+/* ================= 第一幕 ================= */
+function renderAct1(revisit){
+  S.revisitMode=!!revisit;
+  setAct(1,"第一幕 · 大家都记得我");
+  $("notebtn").style.display="flex";
+  $("audiobtn").style.display="flex";
+  showScreen(
+    '<p class="muted mono" style="text-align:right">周五 18:42 · 傍晚 · 我的房间</p>'
+    +'<div class="goal">目标 · 弄清这篇帖子，和我有什么关系</div>'
+    +'<div class="deskscene fadein"><div class="ds-light"></div>'
+    +'<div class="ds-cup"></div><div class="ds-ring"></div>'
+    +'<div class="ds-note">请不要替我解释。<span class="ds-fold"></span></div>'
+    +'<div class="ds-chair"></div>'
+    +'<div class="ds-phone" onclick="pickPhone()"><div class="ds-glow"></div>'
+    +'<div class="ds-pscr"><div class="ds-ptime">18:42</div>'
+    +'<div class="ds-pnotif"><b>回声</b>　评论 6,391 · 私信 2<br>互动消息 99+</div></div>'
+    +'<div class="ds-crack"></div><div class="ds-badge">99+</div></div></div>'
+    +'<p class="hint" style="text-align:center;margin-top:10px">杯子还放在老位置，纸条也在——那张照片，就是在我的桌上拍的。<b>点击手机，拿起</b>。</p>'
+    +'<div class="me">“周五？我记得……周一晚上，我还在改那篇稿。”</div>'
+  );
+  // 从序幕点击手机进入 = 已经拿起；回查证时直接解锁到帖子
+  if(revisit){pickPhone(true);}else{pickPhone();}
+}
+function pickPhone(skipLock){
+  if($("phoverlay"))return;
+  var ov=document.createElement("div");
+  ov.className="ph-overlay";ov.id="phoverlay";
+  ov.innerHTML='<div class="phone" id="phoneframe"><div class="ph-scr"><div class="ph-island"></div>'
+    +'<div class="ph-status"><span>18:42</span><span id="phstitle"></span><span>87%</span></div>'
+    +'<div class="appscr" id="appscr">'+appScreenHTML(S.revisitMode)+'</div>'
+    +'<div class="ph-crack"></div>'
+    +'<div class="lockscr" id="lockscr">'
+    +'<div class="lk-time">18:42</div><div class="lk-date">9月11日 周五 · 傍晚</div>'
+    +'<div class="lk-list">'
+    +'<div class="lk-notif lk-note"><div class="lk-app"><span>便签</span><span>16:20</span></div>'
+    +'<div class="lk-text">已联系医生。今天先休息。有什么不舒服，给我打电话。—— 周芮</div></div>'
+    +'<div class="lk-notif"><div class="lk-app"><span>回声</span><span>现在</span></div>'
+    +'<div class="lk-text">评论 6,391 · 私信 2 · 互动消息 99+</div></div></div>'
+    +'<div class="lk-unlock" onclick="unlockPhone()"><span class="arrow">⌃</span><span>上滑解锁</span></div>'
+    +'</div></div></div>'
+    +'<div class="ov-notes" id="ovnotes" style="display:none">'
+    +'<div class="me">“这句话是我发的。但我不知道，我在谢谢他什么。”</div></div>'
+    +'<div class="ph-under" id="phunder"></div>';
+  document.body.appendChild(ov);
+  requestAnimationFrame(function(){requestAnimationFrame(function(){var p=$("phoneframe");if(p)p.classList.add("up");});});
+  refreshPhunder(false);
+  if(skipLock)unlockPhone(true);
+}
+function refreshPhunder(unlocked){
+  var u=$("phunder");if(!u)return;
+  if(!unlocked){
+    u.innerHTML='<button class="btn ghost" onclick="putDownPhone()">放下手机</button>'
+      +'<span class="hint" style="align-self:center">先解锁——它们想让我看的，都在里面。</span>';
+  }else if(S.revisitMode){
+    u.innerHTML='<button class="btn ghost" onclick="putDownPhone()">放下手机</button>'
+      +'<button class="btn solid" onclick="closePhoneOverlay();fadeTo(function(){renderAct8();})">返回发布编辑器</button>';
+  }else{
+    u.innerHTML='<button class="btn ghost" onclick="putDownPhone()">放下手机</button>'
+      +'<button class="btn solid" onclick="closePhoneOverlay();cineTo(\'第二幕 · 照片里少了一把椅子\',\'手机上的图太模糊。书房电脑里，存着这张照片的原文件。\',function(){renderAct2();})">去书房，开电脑看原图</button>';
+  }
+}
+function unlockPhone(instant){
+  var lk=$("lockscr");if(!lk)return;
+  var st=$("phstitle");if(st)st.textContent="回声 · 帖子";
+  if(instant){lk.style.display="none";}
+  else{lk.classList.add("away");setTimeout(function(){var l=$("lockscr");if(l)l.style.display="none";},640);}
+  var n=$("ovnotes");if(n){n.style.display="block";n.className="ov-notes fadein";}
+  refreshPhunder(true);
+  gainClue("E01","帖子记录能确认什么","能确认发布行为本身；不能直接证明正文中的指控。");
+}
+function putDownPhone(){
+  var ov=$("phoverlay");if(!ov)return;
+  ov.style.transition="opacity .35s";ov.style.opacity=0;
+  setTimeout(function(){if(ov.parentNode)ov.remove();},360);
+}
+function closePhoneOverlay(){var ov=$("phoverlay");if(ov)ov.remove();}
+function appScreenHTML(revisit){
+  var basis = revisit
+    ? '<div class="card flat" style="border:1px dashed var(--conflict);background:#FBF6F6;margin:14px 0">'
+      +'<div class="sumtitle" style="color:var(--conflict)">完整来源路径（你已收集全部材料，现在能看到全貌）</div>'
+      +'<div class="srcline show">摘要：“作者确认经历被挪用。”</div>'
+      +'<div class="srcline show">来源一：热评整理——“作者已经回复感谢。”</div>'
+      +'<div class="srcline show">来源二：林默 09:16——“谢谢你替我说出来。”</div>'
+      +'<div class="srcline show">来源三：冷眼看世界 21:26——“这不就是自己的故事被别人拿走了吗？”</div>'
+      +'<div class="srcline show hl">该评论的依据：林默 21:04 原帖——“有一段很像，想问清来源。”</div>'
+      +'<div class="btnrow"><button class="btn warn" onclick="traceLoop()">独立证明在哪里？</button></div>'
+      +'<div id="loopResult"></div></div>'
+    : '<div class="zh-sum"><div class="zh-sumtitle">页面摘要</div>'
+      +'<p style="font-size:14px;margin:0 0 6px">作者疑似遭遇个人经历被挪用，在与合作伙伴产生争执后停止公开回应。</p>'
+      +'<button class="zh-link" onclick="toggleBasis(this)">查看摘要依据</button>'
+      +'<div id="basisbox" style="display:none;margin-top:8px">'
+      +'<div class="srcline show">引用 1：帖子正文“他们拿走了我的故事”</div>'
+      +'<div class="srcline show">引用 2：高赞评论及其下的作者回复</div>'
+      +'<div class="srcline show">引用 3：周芮公开评论“谈得不太愉快”</div>'
+      +'<p class="zh-sub" style="margin-top:6px">脚注：仅显示当前可见的三条引用；获取更多记录后可重新核对。</p></div></div>';
+  return '<div class="zh">'
+    +'<div class="zh-prow"><div class="zh-ava c4">林</div><div><div class="zh-name">林默</div><div class="zh-sub">@林间失物 · 登录中</div></div></div>'
+    +'<div class="zh-title">《如果我不再解释，请替我记住那天》</div>'
+    +'<div class="zh-sub" style="margin:6px 0 10px">首次发布 周二 21:04 · 最近编辑 周三 00:13</div>'
+    +'<div class="zh-body"><p style="margin:0">那天之后，我才知道，一个人的经历也可以被别人拿走。</p>'
+    +'<span id="act1full" style="display:none"><p>他们拿走了我的故事，还希望我保持沉默。</p><p>如果我不再解释，请替我记住那天。</p></span></div>'
+    +'<div style="margin-bottom:4px"><button class="zh-link" id="fulltextbtn" onclick="toggleFullText(this)">查看全文</button></div>'
+    +'<div class="zh-photo" onclick="blurPhotoHint()"><div class="zh-phimg"></div><span>配图 1 张 · 缩略图太模糊</span></div>'
+    +basis
+    +'<div class="zh-sec">评论</div>'
+    +'<div class="zh-cmt last" id="cmt-top"><div class="zh-ava sm c1">冷</div><div class="zh-cmain">'
+    +'<div class="zh-name">冷眼看世界 <span class="zh-sub">周二 21:26</span></div>'
+    +'<div class="zh-body">关注你五年了。你从不拿自己的经历开玩笑。我们都相信你。</div>'
+    +'<div class="zh-ops" id="cmt1ops">'+cmt1LikeBtn()+'</div>'
+    +'<div class="zh-replies">'
+    +'<div class="zh-reply"><span class="zh-rname">林间失物（我）</span><span class="zh-sub"> · 周三 09:16</span><p>谢谢你替我说出来。</p></div>'
+    +'<span id="shanwaibox">'+shanwaiHTML()+'</span>'
+    +'</div></div></div>'
+    +'<div class="zh-bar">'
+    +'<button class="zh-pill big" onclick="postBarLike()">赞同 42,817</button>'
+    +'<button class="zh-pill big" onclick="scrollToCmt()">评论 6,391</button>'
+    +'<button class="zh-pill big" onclick="S.favorited=true;toast(\'已收入私人笔记。收藏不产生公开背书。\')">收藏 18,204</button>'
+    +'<button class="zh-pill big" onclick="toast(\'举报需针对具体评论提交。完整评论区将在下一幕开放。\')">举报</button>'
+    +'</div></div>';
+}
+
+function toggleFullText(btn){
+  var f=$("act1full");
+  if(f.style.display==="none"){f.style.display="inline";btn.textContent="收起全文";}
+  else{f.style.display="none";btn.textContent="查看全文";}
+}
+function postBarLike(){
+  if(S.liked&&!S.likeRevoked){toast("你的公开赞同已经落在那条高赞评论上——它比帖子总数字更具体。");}
+  else{toast("42,817 是帖子的总赞同。你的公开表态会落在具体评论上，见下方“赞同”。");}
+}
+function scrollToCmt(){
+  var el=$("cmt-top");if(el)el.scrollIntoView({behavior:"smooth",block:"center"});
+}
+function toggleBasis(btn){
+  var b=$("basisbox");
+  if(b.style.display==="none"){b.style.display="block";btn.textContent="收起摘要依据";}
+  else{b.style.display="none";btn.textContent="查看摘要依据";}
+}
+function cmt1LikeBtn(){
+  return S.likeRevoked?'<button class="zh-pill" onclick="doLike(true)">赞同 12,904 · 已撤回</button>'
+    :(S.liked?'<button class="zh-pill on" onclick="revokeLike()">已赞同 12,905</button>':'<button class="zh-pill" onclick="doLike(false)">赞同 12,904</button>');
+}
+function shanwaiHTML(){
+  return (S.liked&&!S.likeRevoked)?'<div class="zh-reply fadein"><span class="zh-rname">山外</span><span class="zh-sub"> · 刚刚</span><p>作者又点了赞，那应该没有争议了。</p></div>':'';
+}
+function doLike(){
+  S.liked=true;S.likeRevoked=false;
+  if(!S.shanwai){S.shanwai=true;toast("已赞同。这条公开互动已被记录，可能被他人引用。");}
+  refreshAct1Cmt();
+}
+function revokeLike(){
+  S.likeRevoked=true;
+  toast("已撤回赞同。撤回记录保留在互动日志中。");
+  refreshAct1Cmt();
+}
+function refreshAct1Cmt(){
+  var ops=$("cmt1ops");if(ops)ops.innerHTML=cmt1LikeBtn();
+  var sw=$("shanwaibox");if(sw)sw.innerHTML=shanwaiHTML();
+}
+function traceLoop(){
+  S.revisitSummary=true;
+  $("loopResult").innerHTML='<div class="me fadein" style="margin-top:14px">“他们从我的疑问里找到了答案。我又从他们的答案里，找回了所谓的记忆。”</div>'
+    +'<div class="sysbox fadein">引用连线收束回原点：四次转述，同一个起点。隐藏核对清单已更新。</div>'
+    +(((S.liked&&!S.likeRevoked)||S.pinned)?'<p class="muted fadein">本次你再次表达支持后，已有一条新回复将其理解为作者确认。</p>':'<p class="muted fadein">你没有继续确认这条说法，但过去的回复仍被反复引用。</p>');
+  toast("已识别循环引用。回到发布编辑器，会出现新的处理方式。");
+}
+
+/* ================= 第二幕：3D 书房 ================= */
+var study={},walking=false,serverArrived=false,walkT=0;
+var bootCanvas,bootCtx,bootTex,bootT=0,booting=false,booted=false;
+function makeBootTexture(){
+  bootCanvas=document.createElement("canvas");bootCanvas.width=512;bootCanvas.height=300;
+  bootCtx=bootCanvas.getContext("2d");
+  bootCtx.fillStyle="#000";bootCtx.fillRect(0,0,512,300);
+  bootTex=new THREE.CanvasTexture(bootCanvas);
+  return bootTex;
+}
+function drawBoot(t){
+  var x=bootCtx;
+  if(t<0.7){
+    x.fillStyle="#000";x.fillRect(0,0,512,300);
+    x.fillStyle="#c8c8c8";x.font="13px Consolas,monospace";x.textAlign="left";
+    x.fillText("LINMO-PC UEFI BIOS v4.2",16,32);
+    x.fillText("Memory Test : 16384M OK",16,54);
+    x.fillText("Detecting drives ..... OK",16,76);
+    if(t>0.42)x.fillText("Booting Windows ...",16,98);
+  }else if(t<1.9){
+    x.fillStyle="#0078D7";x.fillRect(0,0,512,300);
+    x.fillStyle="#ffffff";
+    var s=26,cx=256,cy=112;
+    x.fillRect(cx-s-3,cy-s-3,s,s);x.fillRect(cx+3,cy-s-3,s,s);
+    x.fillRect(cx-s-3,cy+3,s,s);x.fillRect(cx+3,cy+3,s,s);
+    for(var i=0;i<8;i++){
+      var a=t*6-i*(Math.PI*2/8);
+      x.globalAlpha=Math.max(0.12,1-i*0.12);
+      x.beginPath();x.arc(cx+Math.cos(a)*34,cy+74+Math.sin(a)*13,3,0,7);x.fill();
+    }
+    x.globalAlpha=1;
+  }else{
+    var g=x.createLinearGradient(0,0,512,300);
+    g.addColorStop(0,"#2c5aa0");g.addColorStop(1,"#3a7bd5");
+    x.fillStyle=g;x.fillRect(0,0,512,300);
+  }
+  bootTex.needsUpdate=true;
+}
+function makeDesktopTexture(){
+  var c=document.createElement("canvas");c.width=512;c.height=300;
+  var x=c.getContext("2d");
+  var g=x.createLinearGradient(0,0,512,300);
+  g.addColorStop(0,"#2c5aa0");g.addColorStop(1,"#3a7bd5");
+  x.fillStyle=g;x.fillRect(0,0,512,300);
+  x.fillStyle="rgba(255,255,255,0.09)";x.beginPath();x.arc(400,64,90,0,7);x.fill();
+  x.fillStyle="rgba(255,255,255,0.06)";x.beginPath();x.arc(120,240,110,0,7);x.fill();
+  for(var i=0;i<3;i++){
+    x.fillStyle="rgba(255,255,255,0.88)";x.fillRect(22,22+i*54,26,19);
+    x.fillStyle="rgba(255,255,255,0.55)";x.fillRect(20,46+i*54,30,5);
+  }
+  x.fillStyle="rgba(16,20,26,0.95)";x.fillRect(0,282,512,18);
+  x.fillStyle="#fff";x.fillRect(9,286,9,9);
+  return new THREE.CanvasTexture(c);
+}
+function initStudy(){
+  scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x0a0c11);
+  scene.fog=new THREE.Fog(0x0a0c11,9,22);
+  camera.fov=50;camera.position.set(0,1.62,6.2);camera.updateProjectionMatrix();
+  study={computer:new THREE.Group()};
+  scene.add(new THREE.HemisphereLight(0x25304a,0x0a0a0c,0.24));
+  var moon=new THREE.DirectionalLight(0x8fa8d8,0.2);moon.position.set(-4,5,-2);scene.add(moon);
+  // 木地板 + 地毯
+  var floor=new THREE.Mesh(new THREE.PlaneGeometry(26,26),new THREE.MeshStandardMaterial({color:0x4a3826,roughness:0.7}));
+  floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;scene.add(floor);
+  var rug=new THREE.Mesh(new THREE.PlaneGeometry(4.6,3.2),new THREE.MeshStandardMaterial({color:0x39404e,roughness:1}));
+  rug.rotation.x=-Math.PI/2;rug.position.set(0,0.01,1.2);rug.receiveShadow=true;scene.add(rug);
+  // 墙面
+  var back=new THREE.Mesh(new THREE.PlaneGeometry(26,7),new THREE.MeshStandardMaterial({color:0x6a655c,roughness:1}));
+  back.position.set(0,3.5,-4);back.receiveShadow=true;scene.add(back);
+  var leftW=new THREE.Mesh(new THREE.PlaneGeometry(26,7),new THREE.MeshStandardMaterial({color:0x5f5a51,roughness:1}));
+  leftW.rotation.y=Math.PI/2;leftW.position.set(-5,3.5,0);scene.add(leftW);
+  // 夜景窗（后墙偏左）：夜空 + 月亮 + 城市光斑
+  var winG=new THREE.Group();
+  var night=new THREE.Mesh(new THREE.PlaneGeometry(1.7,1.25),new THREE.MeshBasicMaterial({color:0x16233c}));
+  winG.add(night);
+  var moonDisc=new THREE.Mesh(new THREE.CircleGeometry(0.09,24),new THREE.MeshBasicMaterial({color:0xe8ecf4}));
+  moonDisc.position.set(0.42,0.28,0.01);winG.add(moonDisc);
+  var moonHalo=new THREE.Mesh(new THREE.CircleGeometry(0.17,24),new THREE.MeshBasicMaterial({color:0x8fa8d8,transparent:true,opacity:0.3}));
+  moonHalo.position.set(0.42,0.28,0.005);winG.add(moonHalo);
+  for(var ci=0;ci<12;ci++){
+    var dot=new THREE.Mesh(new THREE.PlaneGeometry(0.018,0.018),
+      new THREE.MeshBasicMaterial({color:0xffd68a,transparent:true,opacity:0.3+Math.random()*0.5}));
+    dot.position.set(-0.75+Math.random()*1.5,-0.55+Math.random()*0.5,0.01);winG.add(dot);
+  }
+  var frameM=new THREE.MeshStandardMaterial({color:0x3a3f47,roughness:0.8});
+  [[-0.88,0,0.06,1.4],[0.88,0,0.06,1.4],[0,0.66,1.82,0.06],[0,-0.66,1.82,0.06],[0,0,0.05,1.25],[0,0,1.7,0.05]].forEach(function(a){
+    var f=new THREE.Mesh(new THREE.BoxGeometry(a[2],a[3],0.07),frameM);
+    f.position.set(a[0],a[1],0.02);winG.add(f);
+  });
+  winG.position.set(-2.1,2.5,-3.96);scene.add(winG);
+  // 书架（右侧）：外框 + 层板 + 书
+  var shelfM=new THREE.MeshStandardMaterial({color:0x54432f,roughness:0.8});
+  var shelf=new THREE.Mesh(new THREE.BoxGeometry(1.5,2.3,0.34),shelfM);
+  shelf.position.set(2.7,1.15,-3.6);scene.add(shelf);
+  var bookCols=[0x7a5a4a,0x4a5a7a,0x5a7a4a,0x8a4a4a,0x6a6a7a,0x9a7a3a,0x3f6a6a];
+  for(var sh=0;sh<3;sh++){
+    var board=new THREE.Mesh(new THREE.BoxGeometry(1.4,0.04,0.3),new THREE.MeshStandardMaterial({color:0x463626,roughness:0.85}));
+    board.position.set(2.7,0.55+sh*0.68,-3.58);scene.add(board);
+    var bx=2.7-0.62;
+    while(bx<2.7+0.6){
+      var bw=0.04+Math.random()*0.05,bh=0.24+Math.random()*0.14;
+      var book=new THREE.Mesh(new THREE.BoxGeometry(bw,bh,0.2),
+        new THREE.MeshStandardMaterial({color:bookCols[Math.floor(Math.random()*bookCols.length)],roughness:0.9}));
+      book.position.set(bx+bw/2,0.57+sh*0.68+bh/2,-3.58);
+      book.rotation.z=(Math.random()-0.5)*0.06;
+      scene.add(book);bx+=bw+0.015;
+    }
+  }
+  // 书桌（后墙前）+ 显示器（黑屏待机）
+  var deskM=new THREE.MeshStandardMaterial({color:0x6b5138,roughness:0.65});
+  var desk=new THREE.Mesh(new THREE.BoxGeometry(2.0,0.06,0.85),deskM);
+  desk.position.set(0,0.78,-2.55);desk.receiveShadow=true;study.computer.add(desk);
+  [[-0.9,-0.34],[0.9,-0.34],[-0.9,0.34],[0.9,0.34]].forEach(function(p){
+    var leg=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.78,0.06),deskM);
+    leg.position.set(p[0],0.39,-2.55+p[1]);study.computer.add(leg);
+  });
+  var monM=new THREE.MeshStandardMaterial({color:0x16181d,roughness:0.4,metalness:0.35});
+  var mon=new THREE.Mesh(new THREE.BoxGeometry(0.84,0.5,0.045),monM);
+  mon.position.set(0,1.22,-2.72);mon.rotation.x=-0.05;study.computer.add(mon);
+  var stand=new THREE.Mesh(new THREE.BoxGeometry(0.09,0.3,0.09),monM);
+  stand.position.set(0,0.97,-2.72);study.computer.add(stand);
+  var base=new THREE.Mesh(new THREE.BoxGeometry(0.3,0.02,0.22),monM);
+  base.position.set(0,0.82,-2.72);study.computer.add(base);
+  study.screenMat=new THREE.MeshBasicMaterial({map:makeBootTexture()});
+  var scr=new THREE.Mesh(new THREE.PlaneGeometry(0.78,0.44),study.screenMat);
+  scr.position.set(0,1.22,-2.696);scr.rotation.x=-0.05;study.computer.add(scr);
+  // 电源呼吸灯（待机的橙色小点）
+  study.powerLed=new THREE.Mesh(new THREE.PlaneGeometry(0.018,0.018),new THREE.MeshBasicMaterial({color:0xd07020}));
+  study.powerLed.position.set(0.36,0.99,-2.695);study.computer.add(study.powerLed);
+  // 键盘 / 鼠标 / 主机
+  var kb=new THREE.Mesh(new THREE.BoxGeometry(0.46,0.02,0.16),new THREE.MeshStandardMaterial({color:0x22252c,roughness:0.55}));
+  kb.position.set(0,0.82,-2.35);study.computer.add(kb);
+  var ms=new THREE.Mesh(new THREE.BoxGeometry(0.06,0.025,0.1),new THREE.MeshStandardMaterial({color:0x22252c,roughness:0.5}));
+  ms.position.set(0.33,0.815,-2.35);study.computer.add(ms);
+  var tower=new THREE.Mesh(new THREE.BoxGeometry(0.24,0.52,0.5),monM);
+  tower.position.set(0.72,0.26,-2.6);study.computer.add(tower);
+  // 台灯（亮着的暖光，书房主光）
+  var lampG=new THREE.Group();
+  var lampBase=new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.11,0.03,20),monM);
+  lampBase.position.y=0.015;lampG.add(lampBase);
+  var lampArm=new THREE.Mesh(new THREE.CylinderGeometry(0.015,0.015,0.42,10),monM);
+  lampArm.position.set(0.03,0.24,0);lampArm.rotation.z=-0.35;lampG.add(lampArm);
+  var shade=new THREE.Mesh(new THREE.ConeGeometry(0.11,0.14,20,1,true),
+    new THREE.MeshStandardMaterial({color:0x2f333b,roughness:0.6,emissive:0xffb86a,emissiveIntensity:0.5,side:THREE.DoubleSide}));
+  shade.position.set(0.11,0.46,0);shade.rotation.z=0.5;lampG.add(shade);
+  lampG.position.set(-0.72,0.81,-2.6);study.computer.add(lampG);
+  study.lampLight=new THREE.PointLight(0xffc98a,1.05,5.5);
+  study.lampLight.position.set(-0.58,1.25,-2.55);study.lampLight.castShadow=true;
+  study.lampLight.shadow.mapSize.set(512,512);scene.add(study.lampLight);
+  // 桌面小物：咖啡杯 + 便笺
+  var cup=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.038,0.1,20),new THREE.MeshStandardMaterial({color:0xe8e4da,roughness:0.4}));
+  cup.position.set(0.5,0.86,-2.5);cup.castShadow=true;study.computer.add(cup);
+  var note=new THREE.Mesh(new THREE.PlaneGeometry(0.2,0.14),new THREE.MeshStandardMaterial({color:0xf3ead0,roughness:0.95}));
+  note.rotation.x=-Math.PI/2;note.rotation.z=0.3;note.position.set(-0.32,0.815,-2.35);study.computer.add(note);
+  // 海报（呼应后续剧情）
+  var poster=new THREE.Mesh(new THREE.PlaneGeometry(0.7,1.05),new THREE.MeshStandardMaterial({map:makePosterTexture(),roughness:0.95}));
+  poster.position.set(1.3,2.6,-3.97);poster.rotation.y=-0.04;scene.add(poster);
+  // 椅子（背对玩家）
+  var chairM=new THREE.MeshStandardMaterial({color:0x2c2f36,roughness:0.7});
+  var seat=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.05,0.48),chairM);
+  seat.position.set(0,0.5,-1.55);scene.add(seat);
+  var backr=new THREE.Mesh(new THREE.BoxGeometry(0.48,0.55,0.05),chairM);
+  backr.position.set(0,0.82,-1.32);backr.rotation.x=0.1;scene.add(backr);
+  var pole=new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,0.48,10),chairM);
+  pole.position.set(0,0.26,-1.55);scene.add(pole);
+  var cbase=new THREE.Mesh(new THREE.CylinderGeometry(0.26,0.3,0.03,16),chairM);
+  cbase.position.set(0,0.02,-1.55);scene.add(cbase);
+  // 尘埃
+  var dGeo=new THREE.BufferGeometry();var M=70;var dp=new Float32Array(M*3);
+  for(var j=0;j<M;j++){dp[j*3]=(Math.random()-0.5)*7;dp[j*3+1]=Math.random()*3.2+0.4;dp[j*3+2]=Math.random()*7-3.5;}
+  dGeo.setAttribute("position",new THREE.BufferAttribute(dp,3));
+  study.dust=new THREE.Points(dGeo,new THREE.PointsMaterial({color:0xffe8c0,size:0.015,transparent:true,opacity:0.4,depthWrite:false}));
+  scene.add(study.dust);
+  scene.add(study.computer);
+  walking=false;serverArrived=false;booting=false;
+  animMode="study";
+  animateStudy();
+}
+function animateStudy(){
+  if(animMode!=="study")return;
+  requestAnimationFrame(animateStudy);
+  var t=clock.getElapsedTime();
+  // 待机电源灯呼吸（引导玩家操作）
+  if(!booted){
+    var b=Math.sin(t*2.4)*0.5+0.5;
+    study.powerLed.material.color.setRGB(0.85*b+0.15,0.42*b+0.06,0.08);
+  }else{
+    study.powerLed.material.color.setRGB(0.2,0.85,0.35);
+  }
+  // 台灯暖光细微波动（电压不稳的真实感）
+  study.lampLight.intensity=1.05+Math.sin(t*7.3)*0.02+Math.sin(t*13.7)*0.014;
+  // 尘埃缓浮
+  study.dust.rotation.y=t*0.02;
+  study.dust.position.y=Math.sin(t*0.3)*0.06;
+  // 开机动画
+  if(booting){
+    bootT+=0.016;
+    drawBoot(bootT);
+    if(bootT>2.35){booting=false;booted=true;bootDone();}
+  }
+  if(walking){
+    walkT+=0.016/2.6;
+    var k=Math.min(walkT,1);
+    var e=k<0.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+    camera.position.z=6.2+(-1.12-6.2)*e;
+    camera.position.y=1.62-0.27*e+Math.sin(k*Math.PI*7)*0.022*(1-k);
+    camera.position.x=Math.sin(k*Math.PI*2)*0.05*(1-k);
+    camera.lookAt(0,1.22-0.04*e,-2.7);
+    if(k>=1){walking=false;serverArrived=true;arriveComputer();}
+  }else if(!serverArrived){
+    camera.position.y=1.62+Math.sin(t*0.8)*0.012;
+    camera.position.x+=(mouseX*0.4-camera.position.x)*0.03;
+    camera.lookAt(0,1.15,-2.5);
+  }else{
+    camera.position.y=1.35+Math.sin(t*0.9)*0.008;
+    camera.lookAt(0,1.2,-2.7);
+  }
+  renderer.render(scene,camera);
+}
+function walkToComputer(){
+  if(walking||serverArrived)return;
+  walking=true;walkT=0;
+  $("serverhint").style.display="none";
+}
+function arriveComputer(){
+  if(booted){
+    fadeTo(function(){
+      animMode="none";
+      $("stage3d").style.display="none";
+      $("ui").style.display="block";
+      showWindowsDesktop();
+    });
+    return;
+  }
+  var h=$("serverhint");
+  h.style.display="flex";
+  h.innerHTML='<div class="sh-text">屏幕黑着，映出台灯的光。<br>右下角的电源灯，在一明，一灭。</div>'
+    +'<button class="sh-btn" onclick="pressPower()">按 下 电 源 键</button>';
+}
+function pressPower(){
+  if(booting||booted)return;
+  booting=true;bootT=0;
+  $("serverhint").style.display="none";
+}
+function bootDone(){
+  study.screenMat.map=makeDesktopTexture();study.screenMat.needsUpdate=true;
+  fadeTo(function(){
+    animMode="none";
+    $("stage3d").style.display="none";
+    $("ui").style.display="block";
+    showWindowsDesktop();
+  });
+}
+function leaveComputer(){
+  fadeTo(function(){
+    $("ui").style.display="none";
+    $("progressbar").style.display="block";
+    $("stage3d").style.display="block";
+    animMode="study";
+    animateStudy();
+    var h=$("serverhint");
+    h.style.display="flex";
+    h.innerHTML='<div class="sh-text">电脑没有关，桌面还亮着。</div>'
+      +'<button class="sh-btn" onclick="sitBack()">坐 回 电 脑 前</button>';
+  });
+}
+function sitBack(){
+  $("serverhint").style.display="none";
+  fadeTo(function(){
+    animMode="none";
+    $("stage3d").style.display="none";
+    $("ui").style.display="block";
+    showWindowsDesktop();
+  });
+}
+function finishAct2(){
+  playSfx(AU.shut);
+  $("ui").innerHTML='<div class="shutdown">正 在 关 机 …</div>';
+  setTimeout(function(){
+    animMode="none";
+    $("stage3d").style.display="none";
+    cineTo("第三幕 · 替我说话的人","合上电脑。我回到书桌前，拿起手机。<br>评论区还在每秒刷新。",function(){
+      $("ui").style.display="block";
+      renderAct3();
+    });
+  },1500);
+}
+
+/* ================= 第二幕：照片 ================= */
+function rr(ctx,x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+}
+function drawPhoto(ctx,W,H,full){
+  // 统一逻辑布局 960×480；裁剪版即完整图的左 640px
+  if(!full){ctx.save();ctx.beginPath();ctx.rect(0,0,640,480);ctx.clip();}
+  // —— 房间背景（夜）——
+  var bg=ctx.createLinearGradient(0,0,0,480);
+  bg.addColorStop(0,"#242a33");bg.addColorStop(0.5,"#1a1e26");bg.addColorStop(1,"#12151b");
+  ctx.fillStyle=bg;ctx.fillRect(0,0,960,480);
+  // —— 夜景窗（左上）——
+  var wx=53,wy=24,ww=201,wh=154;
+  var sky=ctx.createLinearGradient(wx,wy,wx,wy+wh);
+  sky.addColorStop(0,"#2e3d5c");sky.addColorStop(1,"#101a2c");
+  ctx.fillStyle=sky;ctx.fillRect(wx,wy,ww,wh);
+  ctx.fillStyle="rgba(232,236,244,0.95)";ctx.beginPath();ctx.arc(wx+145,wy+37,17,0,7);ctx.fill();
+  ctx.fillStyle="rgba(140,165,210,0.30)";ctx.beginPath();ctx.arc(wx+145,wy+37,30,0,7);ctx.fill();
+  for(var i=0;i<14;i++){
+    ctx.fillStyle="rgba(255,214,140,"+(0.25+Math.random()*0.4)+")";
+    ctx.fillRect(wx+8+Math.random()*(ww-16),wy+wh*0.62+Math.random()*wh*0.3,2.5,2.5);
+  }
+  ctx.fillStyle="#3a3f47";
+  ctx.fillRect(wx-8,wy-8,ww+16,9);ctx.fillRect(wx-8,wy+wh,ww+16,9);
+  ctx.fillRect(wx-8,wy,8,wh);ctx.fillRect(wx+ww,wy,8,wh);
+  ctx.fillRect(wx+ww/2-3,wy,6,wh);ctx.fillRect(wx,wy+wh/2-2,ww,5);
+  // 玻璃反光：另一把椅子的椅背 + 灰色衣袖（热点四）
+  ctx.save();ctx.globalAlpha=0.30;
+  ctx.fillStyle="#0c0e12";ctx.fillRect(wx+112,wy+64,46,64);
+  ctx.fillStyle="#5c5e68";ctx.fillRect(wx+128,wy+90,28,32);
+  ctx.restore();
+  // 斜射进屋的月光
+  ctx.save();ctx.globalAlpha=0.09;ctx.fillStyle="#bcd0f0";
+  ctx.beginPath();ctx.moveTo(wx+40,wy+wh);ctx.lineTo(wx+ww+260,480);ctx.lineTo(wx+ww-40,480);ctx.lineTo(wx-70,wy+wh);ctx.closePath();ctx.fill();ctx.restore();
+  // —— 桌面 ——
+  var tb=ctx.createLinearGradient(0,221,0,480);
+  tb.addColorStop(0,"#5d4c39");tb.addColorStop(0.5,"#493a2a");tb.addColorStop(1,"#32271c");
+  ctx.fillStyle=tb;ctx.fillRect(0,221,960,259);
+  ctx.strokeStyle="rgba(28,19,11,0.28)";ctx.lineWidth=1.2;
+  for(var l=0;l<9;l++){
+    ctx.beginPath();var ly=232+l*27;
+    ctx.moveTo(0,ly);ctx.bezierCurveTo(280,ly+4,580,ly-4,960,ly+3);ctx.stroke();
+  }
+  // —— 咖啡杯（带投影）——
+  var cx=230,cy=300;
+  ctx.save();ctx.globalAlpha=0.35;ctx.fillStyle="#000";
+  ctx.beginPath();ctx.ellipse(cx+14,cy+16,34,11,0,0,7);ctx.fill();ctx.restore();
+  var cg=ctx.createLinearGradient(cx-26,cy-20,cx+26,cy+22);
+  cg.addColorStop(0,"#f2efe8");cg.addColorStop(0.55,"#d6d1c4");cg.addColorStop(1,"#a49d8f");
+  ctx.fillStyle=cg;ctx.beginPath();ctx.ellipse(cx,cy,26,20,0,0,7);ctx.fill();
+  ctx.fillStyle="#efece4";ctx.beginPath();ctx.ellipse(cx,cy-10,22,10,0,0,7);ctx.fill();
+  var cof=ctx.createRadialGradient(cx-4,cy-11,2,cx,cy-10,20);
+  cof.addColorStop(0,"#5a3d24");cof.addColorStop(1,"#2b1b0d");
+  ctx.fillStyle=cof;ctx.beginPath();ctx.ellipse(cx,cy-10,18.5,8.5,0,0,7);ctx.fill();
+  ctx.strokeStyle="rgba(255,240,220,0.55)";ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.ellipse(cx-3,cy-11,10,4.2,0,Math.PI*1.05,Math.PI*1.7);ctx.stroke();
+  ctx.strokeStyle="#d6d1c4";ctx.lineWidth=3.5;
+  ctx.beginPath();ctx.arc(cx+25,cy-1,8,-Math.PI*0.42,Math.PI*0.55);ctx.stroke();
+  // 两圈水痕（热点一）：一新一旧
+  ctx.strokeStyle="rgba(215,205,185,0.5)";ctx.lineWidth=2.5;
+  ctx.beginPath();ctx.ellipse(275,318,24,15,0.1,0,7);ctx.stroke();
+  ctx.strokeStyle="rgba(215,205,185,0.26)";
+  ctx.beginPath();ctx.ellipse(292,330,22,14,0.15,0,7);ctx.stroke();
+  // 杯垫 + 一支被推到一边的笔 + 月光落在桌面的亮斑
+  ctx.strokeStyle="rgba(60,44,28,0.55)";ctx.lineWidth=5;
+  ctx.beginPath();ctx.ellipse(cx,cy+8,34,13,0,0,7);ctx.stroke();
+  ctx.save();ctx.translate(448,352);ctx.rotate(0.35);
+  ctx.fillStyle="#20242c";ctx.fillRect(-34,-3,68,6);
+  ctx.fillStyle="#3d434e";ctx.fillRect(22,-3,12,6);
+  ctx.fillStyle="#8892a2";ctx.fillRect(-38,-2,6,4);
+  ctx.restore();
+  ctx.save();ctx.globalAlpha=0.07;ctx.fillStyle="#bcd0f0";
+  ctx.beginPath();ctx.ellipse(430,330,180,60,-0.25,0,7);ctx.fill();ctx.restore();
+  // —— 裂屏手机（热点二）——
+  ctx.save();ctx.translate(371,326);ctx.rotate(-0.13);
+  ctx.save();ctx.globalAlpha=0.35;ctx.fillStyle="#000";rr(ctx,-44,-44,96,101,9);ctx.fill();ctx.restore();
+  var phg=ctx.createLinearGradient(-48,0,48,0);
+  phg.addColorStop(0,"#2b2f36");phg.addColorStop(0.5,"#171a20");phg.addColorStop(1,"#0b0d11");
+  ctx.fillStyle=phg;rr(ctx,-48,-50,96,101,9);ctx.fill();
+  var scg=ctx.createLinearGradient(0,-46,0,46);
+  scg.addColorStop(0,"#243250");scg.addColorStop(0.6,"#131b2c");scg.addColorStop(1,"#0c121f");
+  ctx.fillStyle=scg;rr(ctx,-41,-46,82,92,6);ctx.fill();
+  ctx.fillStyle="rgba(90,140,220,0.16)";ctx.beginPath();ctx.arc(14,-22,24,0,7);ctx.fill();
+  ctx.fillStyle="#e8eef8";ctx.font="300 30px 'Segoe UI',sans-serif";ctx.textAlign="center";
+  ctx.fillText("03:02",0,-12);
+  ctx.fillStyle="rgba(200,212,230,0.7)";ctx.font="11px 'Segoe UI',sans-serif";
+  ctx.fillText("6月16日 星期二",0,6);
+  ctx.save();ctx.globalAlpha=0.13;ctx.fillStyle="#fff";
+  ctx.beginPath();ctx.moveTo(-41,-46);ctx.lineTo(4,-46);ctx.lineTo(-24,46);ctx.lineTo(-41,46);ctx.closePath();ctx.fill();ctx.restore();
+  ctx.strokeStyle="rgba(212,226,242,0.8)";ctx.lineWidth=1.2;
+  ctx.beginPath();ctx.moveTo(9,-46);ctx.lineTo(-8,-15);ctx.lineTo(18,4);ctx.lineTo(-14,24);ctx.lineTo(-9,46);ctx.stroke();
+  ctx.lineWidth=0.8;ctx.globalAlpha=0.6;
+  ctx.beginPath();ctx.moveTo(-8,-15);ctx.lineTo(-38,-5);ctx.moveTo(18,4);ctx.lineTo(41,14);ctx.stroke();
+  ctx.restore();
+  // —— 纸条（热点三）：贴近右切边，下方小字行被硬裁 ——
+  ctx.save();ctx.translate(558,413);ctx.rotate(0.045);
+  ctx.save();ctx.globalAlpha=0.3;ctx.fillStyle="#000";ctx.fillRect(-107,-21,220,50);ctx.restore();
+  var ng=ctx.createLinearGradient(0,-25,0,25);
+  ng.addColorStop(0,"#f4ecd4");ng.addColorStop(1,"#e2d6b6");
+  ctx.fillStyle=ng;ctx.fillRect(-110,-25,220,50);
+  // 折角
+  ctx.fillStyle="rgba(120,100,70,0.35)";
+  ctx.beginPath();ctx.moveTo(110,-25);ctx.lineTo(86,-25);ctx.lineTo(110,-1);ctx.closePath();ctx.fill();
+  ctx.fillStyle="#d8cfb8";
+  ctx.beginPath();ctx.moveTo(86,-25);ctx.lineTo(102,-9);ctx.lineTo(110,-1);ctx.lineTo(110,-25);ctx.closePath();ctx.fill();
+  ctx.fillStyle="#46443e";ctx.font="16px 'KaiTi','STKaiti',serif";ctx.textAlign="center";
+  ctx.fillText("请不要替我解释。",0,-1);
+  if(full){
+    ctx.fillStyle="#8a6a4a";ctx.font="12px 'KaiTi','STKaiti',serif";
+    ctx.fillText("——今晚朗读练习，第3段台词",0,17);
+  }else{
+    // 裁剪版：小字行只露左半，右半被 640 切线硬裁
+    ctx.fillStyle="rgba(70,68,62,0.55)";ctx.font="12px 'KaiTi','STKaiti',serif";ctx.textAlign="left";
+    ctx.fillText("——今晚……",-104,17);
+  }
+  ctx.restore();
+  if(full){
+    // —— 扩展区（x>640）：第二把椅子与坐着的人（左缘贴近切线，裁剪版只露一绺袖边）——
+    ctx.save();ctx.globalAlpha=0.4;ctx.fillStyle="#000";
+    ctx.beginPath();ctx.ellipse(692,378,70,14,0,0,7);ctx.fill();ctx.restore();
+    ctx.fillStyle="#443c32";ctx.fillRect(650,240,92,112);           // 椅背
+    ctx.fillStyle="#3a332b";ctx.fillRect(644,350,104,18);             // 坐面
+    ctx.fillStyle="#57575e";ctx.beginPath();ctx.ellipse(695,214,27,33,0,0,7);ctx.fill(); // 头
+    ctx.fillStyle="#4c4c54";ctx.fillRect(662,244,66,68);              // 肩身
+    ctx.fillStyle="#6a6a70";ctx.fillRect(626,262,40,52);              // 灰袖（左缘探过切线）
+    // 墙上活动海报
+    ctx.fillStyle="#EAE6DB";ctx.fillRect(760,42,178,108);
+    ctx.strokeStyle="#52677F";ctx.lineWidth=4;ctx.strokeRect(766,48,166,96);
+    ctx.fillStyle="#52677F";ctx.font="bold 26px 'KaiTi','STKaiti',serif";ctx.textAlign="center";
+    ctx.fillText("借来的故事",849,96);
+    ctx.fillStyle="#8a8578";ctx.font="11px sans-serif";
+    ctx.fillText("旧书店 · 朗读分享会",849,122);
+    // 右侧暗部书架剪影
+    ctx.fillStyle="rgba(10,12,16,0.55)";ctx.fillRect(910,110,50,280);
+  }else{
+    // 裁剪版：右切缘露出一绺灰色布料（袖子最左缘），暗示“右边还有人”
+    var eg=ctx.createLinearGradient(632,0,640,0);
+    eg.addColorStop(0,"rgba(106,106,112,0)");eg.addColorStop(1,"rgba(106,106,112,0.85)");
+    ctx.fillStyle=eg;ctx.fillRect(630,262,10,52);
+  }
+  // —— 角标 ——
+  ctx.fillStyle="rgba(232,228,215,0.92)";ctx.font="bold 17px Consolas,monospace";ctx.textAlign="right";
+  ctx.fillText(full?"排练片段 02:17":"02:17",full?620:618,455);
+  // —— 暗角 + 噪点（照片质感）——
+  var vg=ctx.createRadialGradient(430,240,180,430,240,620);
+  vg.addColorStop(0,"rgba(0,0,0,0)");vg.addColorStop(1,"rgba(0,0,0,0.42)");
+  ctx.fillStyle=vg;ctx.fillRect(0,0,960,480);
+  ctx.fillStyle="rgba(255,255,255,0.03)";
+  for(var n=0;n<380;n++){ctx.fillRect(Math.random()*960,Math.random()*480,1,1);}
+  if(!full)ctx.restore();
+}
+function renderAct2(){
+  setAct(2,"第二幕 · 02:17");
+  $("ui").style.display="none";
+  $("stage3d").style.display="block";
+  initStudy();
+  var h=$("serverhint");
+  h.style.display="flex";
+  h.innerHTML='<div class="sh-text">书房里只有台灯还亮着。<br>电脑休眠了一整夜——<br>那张照片，就存在桌面上的一个文件里。</div>'
+    +'<button class="sh-btn" onclick="walkToComputer()">走 向 书 桌</button>';
+}
+function showWindowsDesktop(){
+  playSfx(AU.boot);
+  $("progressbar").style.display="none";
+  $("ui").innerHTML=
+  '<div class="windesk">'
+  +'<div class="wglow" style="width:520px;height:520px;right:-120px;top:-160px;background:#7db3e8"></div>'
+  +'<div class="wglow" style="width:460px;height:460px;left:-140px;bottom:-140px;background:#2a4a80"></div>'
+  +'<div class="dic" id="ic-pc" style="top:24px" onclick="clickIcon(this,\'pc\')"><div class="dicimg pc"></div>此电脑</div>'
+  +'<div class="dic" id="ic-bin" style="top:118px" onclick="clickIcon(this,\'bin\')"><div class="dicimg bin"></div>回收站</div>'
+  +'<div class="dic" id="ic-jpg" style="top:212px" onclick="clickIcon(this,\'jpg\')"><div class="dicimg jpg"></div>IMG_0217.jpg</div>'
+  +'<div class="photoapp" id="photoapp">'
+  +'<div class="pa-title" id="pa-drag"><span class="pa-thumb"></span>IMG_0217.jpg — 照片'
+  +'<div class="pa-x"><button onclick="minPhotoApp()" title="最小化">—</button><button onclick="toast(\'已经最大化了。拖动标题栏可以移动窗口。\')" title="最大化">▢</button><button class="pclose" onclick="closePhotoApp()" title="关闭">✕</button></div></div>'
+  +'<div class="pa-tools">'
+  +'<button onclick="paZoom(1.5)">＋ 放大</button><button onclick="paZoom(0.75)">－ 缩小</button>'
+  +'<button onclick="paZoom(1)">⤢ 实际大小</button><span class="pa-lvl" id="pa-lvl">100%</span>'
+  +'<span class="pa-sep"></span><button onclick="paInfo()">ⓘ 照片信息</button>'
+  +'</div>'
+  +'<div class="pa-main"><div class="pa-body">'
+  +'<div id="photowrap" style="position:relative;width:640px;flex:none"><canvas id="photocv" width="640" height="480" style="display:block;width:100%;height:auto;border-radius:2px"></canvas></div>'
+  +'</div>'
+  +'<div class="pa-info" id="pa-info"><b>IMG_0217.jpg</b>'
+  +'<span>文件大小</span>　2.4 MB<br><span>尺寸</span>　4096 × 3072<br><span>拍摄设备</span>　与我的手机一致<br><span>修改时间</span>　周三 00:13<br><span>来源</span>　帖子配图（裁剪版）<br><br><span>备注</span>　右下角角标 “02:17” 含义不明。</div>'
+  +'</div></div>'
+  +'<div class="sticky" id="stickynote"><div class="st-head" id="st-drag">调查笔记 — 便签<button onclick="$(\'stickynote\').style.display=\'none\'">✕</button></div>'
+  +'<div class="st-body">'
+  +'<p class="muted" style="font-size:12px;color:#7a6d2a">画面是一间昏暗的房间：咖啡、裂屏手机、纸条、开着的窗。<b>点击照片上发光的圆点查看细节。</b></p>'
+  +'<div id="spotinfo"></div>'
+  +'<div class="me" style="background:#f5e9c0">“杯子是我的。手机也是。可我为什么要拍它们？”</div>'
+  +'<div style="font-weight:600;font-size:12px;margin:8px 0 4px">暂存推测（私人笔记，不改变公开摘要）</div>'
+  +'<div id="guessbtns">'
+  +'<button class="btn ghost" onclick="pickGuess(this,1)">我与某个人发生了争吵</button>'
+  +'<button class="btn ghost" onclick="pickGuess(this,2)">这是分享会或排练的布景</button>'
+  +'<button class="btn ghost" onclick="pickGuess(this,3)">照片被裁剪，含义可能改变</button>'
+  +'<button class="btn ghost" onclick="pickGuess(this,4)">现在还不能判断</button></div>'
+  +'<div id="guessnote"></div>'
+  +'<div class="btnrow"><button class="btn solid" id="act2next" disabled onclick="finishAct2()">合上电脑，回到评论区</button>'
+  +'<span class="hint" id="act2hint" style="color:#8a7d3a">先查看至少 2 处细节并暂存一条推测</span></div>'
+  +'</div></div>'
+  +'<div class="taskbar">'
+  +'<span class="tb-btn" onclick="toast(\'开始菜单里没有你需要的东西。答案都在那张照片里。\')">⊞</span>'
+  +'<span class="tb-btn" style="font-size:14px" onclick="toast(\'搜索不到“那三天”。\')">⌕</span>'
+  +'<span class="tb-app" id="tb-photo" onclick="openPhotoApp()"><span class="tb-ic"></span>照片</span>'
+  +'<span class="tb-app" onclick="toast(\'浏览器历史……周三下午有一条会话。我不记得我开过它。\')"><span class="tb-ic" style="background:#3fbf7f;border-color:#7fd8ab"></span>浏览器</span>'
+  +'<span class="tb-app" onclick="$(\'stickynote\').style.display=\'block\'"><span class="tb-ic" style="background:#f0df8e;border-color:#d8c86a"></span>便签</span>'
+  +'<span class="tb-app" onclick="leaveComputer()"><span class="tb-ic" style="background:#8a94a6;border-color:#c3cad6"></span>离开电脑</span>'
+  +'<div class="tb-tray">18:52<br>周五</div>'
+  +'</div>'
+  +'</div>';
+  makeDraggable("pa-drag","photoapp");
+  makeDraggable("st-drag","stickynote");
+}
+var jpgTimer=null;
+function clickIcon(el,k){
+  var all=document.querySelectorAll(".dic");
+  for(var i=0;i<all.length;i++)all[i].classList.remove("sel");
+  if(k==="jpg"){
+    if(el.classList.contains("sel2")){el.classList.remove("sel2");openPhotoApp();return;}
+    el.classList.add("sel");el.classList.add("sel2");
+    toast("再点一次打开 IMG_0217.jpg");
+    setTimeout(function(){el.classList.remove("sel2");},1600);
+  }else{
+    el.classList.add("sel");
+    toast(k==="pc"?"磁盘里全是旧稿。当前要看的是那张照片。":"回收站是空的。");
+  }
+}
+function openPhotoApp(){
+  var app=$("photoapp");
+  if(app.style.display==="flex")return;
+  app.style.display="flex";app.classList.add("pa-open");
+  $("tb-photo").classList.add("active");
+  if(!S._photoInit){S._photoInit=true;initPhotoCanvas();}
+}
+function closePhotoApp(){$("photoapp").style.display="none";$("tb-photo").classList.remove("active");}
+function minPhotoApp(){closePhotoApp();toast("已最小化到任务栏。");}
+var paZ=1;
+function paZoom(f){
+  paZ=Math.min(2.5,Math.max(0.5,paZ*f));
+  $("photowrap").style.width=Math.round(640*paZ)+"px";
+  $("pa-lvl").textContent=Math.round(paZ*100)+"%";
+}
+function paInfo(){
+  var i=$("pa-info");
+  i.style.display=i.style.display==="block"?"none":"block";
+}
+function makeDraggable(handleId,elId){
+  var handle=$(handleId),el=$(elId);
+  handle.addEventListener("mousedown",function(e){
+    if(e.target.tagName==="BUTTON")return;
+    var r=el.getBoundingClientRect();
+    el.style.transform="none";el.style.right="auto";el.style.bottom="auto";
+    el.style.left=r.left+"px";el.style.top=r.top+"px";
+    var ox=e.clientX-r.left,oy=e.clientY-r.top;
+    function mv(ev){el.style.left=(ev.clientX-ox)+"px";el.style.top=(ev.clientY-oy)+"px";}
+    function up(){document.removeEventListener("mousemove",mv);document.removeEventListener("mouseup",up);}
+    document.addEventListener("mousemove",mv);document.addEventListener("mouseup",up);
+    e.preventDefault();
+  });
+}
+function initPhotoCanvas(){
+  drawPhoto($("photocv").getContext("2d"),640,480,false);
+  var spots=[
+    {x:42,y:66,t:"咖啡",d:"杯子旁有第二圈杯底留下的水痕。画面内只有一只杯子；水痕不能确定由谁、何时留下。"},
+    {x:58,y:68,t:"手机",d:"屏幕显示 03:02，裂纹与我现在手中的手机一致。角标 02:17，手机 03:02——哪个才是拍摄时间？证据板只记录两组数字，不自动称其为造假。"},
+    {x:85,y:86,t:"纸条",d:"纸条写着“请不要替我解释。”它就贴在画面的右边缘——下面那行小字，只剩左半边。"},
+    {x:24,y:22,t:"窗户",d:"玻璃反光中露出另一把椅子的椅背，以及一块灰色衣袖。这张照片里，原本可能不只有我。"},
+    {x:97,y:60,t:"右缘",d:"画面最右边，有一小条灰色的……布？像是谁的袖子，被齐刷刷裁掉了。"}
+  ];
+  var wrap=$("photowrap");
+  spots.forEach(function(s,i){
+    var el=document.createElement("div");
+    el.className="hotspot";el.style.left="calc("+s.x+"% - 17px)";el.style.top="calc("+s.y+"% - 17px)";
+    el.style.width="34px";el.style.height="34px";
+    el.onclick=function(){
+      el.classList.add("seen");S.photoSpots[i]=true;
+      $("spotinfo").innerHTML='<div class="card flat fadein" style="border-left:3px solid var(--guess);background:#fbf6dc;padding:10px 12px;margin:8px 0"><b>'+s.t+'</b><p style="font-size:13px;margin-top:4px">'+s.d+'</p></div>';
+      checkAct2();
+    };
+    if(S.photoSpots[i])el.classList.add("seen");
+    wrap.appendChild(el);
+  });
+  if(S.photoGuess){
+    var gbtns=$("guessbtns").querySelectorAll(".btn");
+    if(gbtns[S.photoGuess-1])gbtns[S.photoGuess-1].className="btn";
+    $("guessnote").innerHTML='<p class="hint" style="color:#8a7d3a">已暂存为“我的推测”（你上次的选择已保留）。</p>';
+  }
+  checkAct2();
+}
+function pickGuess(btn,n){
+  S.photoGuess=n;
+  var btns=$("guessbtns").querySelectorAll(".btn");
+  for(var i=0;i<btns.length;i++)btns[i].className="btn ghost";
+  btn.className="btn";
+  $("guessnote").innerHTML='<p class="hint fadein">已暂存为“我的推测”。选择进入私人笔记，不产生传播后果。</p>';
+  checkAct2();
+}
+function checkAct2(){
+  var count=Object.keys(S.photoSpots).length;
+  if(count>=2&&S.photoGuess){
+    $("act2next").disabled=false;$("act2hint").textContent="可以合上电脑了。";
+    gainClue("E02","照片的疑点","图片内容与截断边缘对不上：角标“02:17”的含义待查。");
+  }
+  else{$("act2hint").textContent="已查看 "+count+"/5 处细节"+(S.photoGuess?"，已暂存推测":"，还需暂存一条推测");}
+}
+
+/* ================= 第三幕：评论区（知乎风） ================= */
+function cmt3LikeBtn(){
+  return (S.liked&&!S.likeRevoked)?'<button class="zh-pill on" onclick="revokeLike3()">已赞同 12,905</button>':'<button class="zh-pill" onclick="like3()">赞同 12,904</button>';
+}
+function cmt3RepBtn(){
+  return S.reported&&!S.reportRevoked?'<button class="zh-op danger on" onclick="revokeReport()">已举报 · 撤回</button>':'<button class="zh-op danger" onclick="reportBai()">举报人身指责</button>';
+}
+function askBtnHTML(k){
+  if(S.asked[k])return '<button class="zh-op" disabled style="opacity:.45;cursor:default">已追问</button>';
+  var label=k==='cold'?'追问“你在现场吗”':(k==='bai'?'追问白噪音':'追问周芮');
+  return '<button class="zh-op" onclick="askChar(\''+k+'\')">'+label+'</button>';
+}
+var ASKN={cold:"冷眼看世界",bai:"白噪音",zhou:"周芮"};
+var ASKQS={
+  cold:[
+    {q:"你在现场吗？",a:"我没到场。我是根据你的帖子判断的。你现在这么问，我反而有点不懂了。",key:true},
+    {q:"你为什么这么肯定？",a:"我了解他。五年了。他不可能拿这种事开玩笑。",key:false},
+    {q:"你见过那张原图吗？",a:"没有。我只看到帖子里的那张。",key:false}
+  ],
+  bai:[
+    {q:"你说，你也在那张照片里？",a:"我保留了原图。周二就发过给你。看一下私信。",key:true},
+    {q:"你为什么被折叠了？",a:"因为他们不想听第二种说法。你肯点开我，已经比大多数人强了。",key:false}
+  ],
+  zhou:[
+    {q:"最后那一版，到底是谁改的？",a:"先看你最早写的那一版。不要从最后一版开始记。",key:true},
+    {q:"那天你们谈了什么？",a:"他问我改口会不会像在编。我说，先拿到原稿再说。",key:false}
+  ]
+};
+function askReplyHTML2(k,qi,fresh){
+  var it=ASKQS[k][qi];
+  return '<div class="zh-reply'+(fresh?' fadein':'')+'" id="reply-'+k+'-'+qi+'"><span class="zh-rname">'+ASKN[k]+'</span><span class="zh-sub"> · 回复 林间失物'+(fresh?' · 刚刚':' · 今天')+'</span>'
+    +'<p><span style="color:#7d8794">问：'+it.q+'</span><br>'+it.a+'</p></div>';
+}
+function askedRepliesHTML(k){
+  var h="";
+  for(var qi=0;qi<ASKQS[k].length;qi++){
+    if(S.askedQ[k+qi])h+=askReplyHTML2(k,qi,false);
+  }
+  return h;
+}
+function coldCmtHTML(last){
+  return '<div class="zh-cmt'+(last?' last':'')+'"><div class="zh-ava sm c1">冷</div><div class="zh-cmain">'
+    +'<div class="zh-name">冷眼看世界 <span class="zh-sub">周二 21:26</span></div>'
+    +'<div class="zh-body">林默是个特别在意文字的人。能让他发这种话，肯定不只是“相似”那么简单。我觉得是分享会里那位合作作者用了他的经历。别逼受伤的人反复证明自己。'
+    +'<span id="coldfull" style="display:'+(S.coldFullOpen?"inline":"none")+'"> 补充：我不在现场，具体情况以当事人说明为准。</span></div>'
+    +'<div class="zh-me" id="coldme" style="display:'+(S.coldFullOpen?"block":"none")+'">“他说得那么熟悉。可他没有去过。”</div>'
+    +'<div class="zh-ops" id="cmt3ops"><span id="like3wrap">'+cmt3LikeBtn()+'</span>'
+    +'<button class="zh-op" onclick="toggleColdFull(this)">'+(S.coldFullOpen?"收起":"展开全文")+'</button>'
+    +'<span id="ask-cold">'+askBtnHTML("cold")+'</span>'
+    +'<button class="zh-op" onclick="S.favorited=true;toast(\'已收藏到私人笔记，不改变公开页面。\')">收藏来源</button></div>'
+    +'<div class="zh-replies" id="replies-cold">'
+    +'<div class="zh-reply"><span class="zh-rname">林间失物（我）</span><span class="zh-sub"> · 周三 09:16</span><p>谢谢你替我说出来。</p></div>'
+    +(askedRepliesHTML("cold"))
+    +(S.watched.cold?watchedReplyHTML("cold"):"")
+    +'</div></div></div>';
+}
+function zhouCmtHTML(last){
+  return '<div class="zh-cmt'+(last?' last':'')+'"><div class="zh-ava sm c2">周</div><div class="zh-cmain">'
+    +'<div class="zh-name">周芮 <span class="zh-sub">周三 09:02 · 朋友</span></div>'
+    +'<div class="zh-body">我是林默的朋友。我们那天确实谈得不太愉快，但事情不是一句话能解释的。请给他一点时间。</div>'
+    +'<div class="zh-ops"><button class="zh-pill" onclick="toast(\'赞同朋友的公开评论同样会被记录和引用。你想了想，先不点。\')">赞同 1,208</button>'
+    +'<span id="ask-zhou">'+askBtnHTML("zhou")+'</span></div>'
+    +'<div class="zh-replies" id="replies-zhou">'
+    +'<div class="zh-reply"><span class="zh-rname">路过网友</span><span class="zh-sub"> · 周三 09:15</span><p>朋友都承认争吵了，事情还不清楚吗？</p></div>'
+    +(askedRepliesHTML("zhou"))
+    +(S.watched.zhou?watchedReplyHTML("zhou"):"")
+    +'</div></div></div>';
+}
+function foldHTML(){
+  return '<div class="zh-foldbar" id="foldbar" onclick="toggleFold()">'+(S.foldOpen?"收起折叠评论 ▴":"查看折叠评论（1）▾")+'</div>'
+    +'<div id="foldbox" style="display:'+(S.foldOpen?"block":"none")+'">'
+    +'<div class="zh-foldnote">该讨论包含互相指责，平台已默认折叠。折叠不代表真伪裁决。</div>'
+    +'<div class="zh-cmt last"><div class="zh-ava sm c3">白</div><div class="zh-cmain">'
+    +'<div class="zh-name">白噪音 <span class="zh-sub">周三 08:47</span></div>'
+    +'<div class="zh-body">别再转那张裁过的图了。那不是他一个人的故事。林默，你明明知道。</div>'
+    +'<div class="zh-ops" id="baiops"><button class="zh-pill" onclick="toast(\'你暂时没有赞同这条——它说的话还需要核对。\')">赞同 23</button>'
+    +'<span id="ask-bai">'+askBtnHTML("bai")+'</span><span id="rep3wrap">'+cmt3RepBtn()+'</span></div>'
+    +'<div class="zh-replies" id="replies-bai">'
+    +'<div class="zh-reply"><span class="zh-rname">纸上灯</span><span class="zh-sub"> · 周三 08:51</span><p>你怎么知道图裁过？</p></div>'
+    +'<div class="zh-reply"><span class="zh-rname">白噪音</span><span class="zh-sub"> · 周三 08:53</span><p>因为我也在照片里。只是被裁掉了。</p></div>'
+    +(askedRepliesHTML("bai"))
+    +(S.watched.bai?watchedReplyHTML("bai"):"")
+    +'</div></div></div></div>';
+}
+function listHTML(){
+  var sort=S.cmtSort||"hot";
+  return sort==="new"?zhouCmtHTML(false)+coldCmtHTML(true):coldCmtHTML(false)+zhouCmtHTML(true);
+}
+function renderAct3(){
+  setAct(3,"第三幕 · 替我说话的人");
+  var sort=S.cmtSort||"hot";
+  showScreen(
+    '<div class="atdesk">'
+    +'<p class="muted mono" style="text-align:right">周五 18:58 · 书桌前 · 我的手机</p>'
+    +'<div class="goal">目标 · 看清评论区里，谁真的在场</div>'
+    +'<h2>评论区 <span class="muted" style="font-size:13px;font-weight:400">回声 · 《如果我不再解释，请替我记住那天》</span></h2>'
+    +'<div class="phone up"><div class="ph-scr"><div class="ph-island"></div>'
+    +'<div class="ph-status"><span>18:51</span><span>回声 · 评论区</span><span>86%</span></div>'
+    +'<div class="appscr"><div class="zh">'
+    +'<div class="zh-head"><span class="zh-cnt">6,391 条评论</span><span class="zh-tabs">'
+    +'<button class="zh-link'+(sort==="hot"?" on":"")+'" id="tab-hot" onclick="setCmtSort(\'hot\')">默认</button>'
+    +'<button class="zh-link'+(sort==="new"?" on":"")+'" id="tab-new" onclick="setCmtSort(\'new\')">最新</button></span></div>'
+    +'<div class="zh-input"><div class="zh-ava sm c4">林</div><div class="zh-inputbox" onclick="cmtInput()">写下你的评论…</div></div>'
+    +'<div class="zh-newbar" id="newcmtbar"><button onclick="loadNewCmts()">3 条新评论 · 点击刷新</button></div>'
+    +'<div id="cmtlist">'+listHTML()+'</div>'
+    +foldHTML()
+    +'</div></div><div class="ph-crack"></div></div></div>'
+    +'<div class="btnrow"><button class="btn solid" onclick="cineTo(\'第四幕 · 三个我\',\'有一件事只有作者本人能查——这篇帖子，被我改过。\',function(){renderAct4();})">打开仅作者可见的“编辑历史”</button></div>'
+    +'</div>'
+  );
+  // 评论入场错落 + 现场感
+  var cmts=$("ui").querySelectorAll(".zh-cmt");
+  for(var ci=0;ci<cmts.length;ci++){cmts[ci].style.animationDelay=(ci*130)+"ms";}
+  startLiveCmt();
+}
+/* 现场感：新评论提示条 + 追问围观 */
+var NEWCMTS=[
+  {n:"吃瓜课代表",t:"有没有前情提要？两天没看怎么几万赞了。",l:"412"},
+  {n:"理智网友",t:"先别站队，等一个完整时间线。",l:"1,206"},
+  {n:"路过网友",t:"那家书店我去过，二楼确实有个活动角。",l:"89"}
+];
+function newCmtsHTML(){
+  return NEWCMTS.map(function(c,i){
+    return '<div class="zh-cmt" style="animation-delay:'+(i*140)+'ms"><div class="zh-ava sm" style="background:#3a4250">路</div><div class="zh-cmain">'
+      +'<div class="zh-name">'+c.n+' <span class="zh-sub">刚刚</span></div>'
+      +'<div class="zh-body">'+c.t+'</div>'
+      +'<div class="zh-ops"><button class="zh-pill" onclick="flyText(this,\'+1\');toast(\'路人评论的赞同不计入你的互动日志。\')">赞同 '+c.l+'</button></div>'
+      +'</div></div>';
+  }).join("");
+}
+function startLiveCmt(){
+  if(S.newCmtsLoaded)return;
+  later(function(){
+    var bar=$("newcmtbar");if(bar)bar.style.display="flex";
+  },9000);
+}
+function loadNewCmts(){
+  S.newCmtsLoaded=true;
+  var bar=$("newcmtbar");if(bar)bar.style.display="none";
+  var list=$("cmtlist");
+  list.insertAdjacentHTML("afterbegin",newCmtsHTML());
+  toast("评论区还在实时发酵。");
+}
+var WATCHTXT={cold:"他也想知道 +1",bai:"照片里还有别人？蹲一个原图",zhou:"“不是一句话能解释的”——那是几句？"};
+function watchedReplyHTML(k){
+  return '<div class="zh-reply"><span class="zh-rname" style="color:#7d8794">围观网友</span><span class="zh-sub"> · 今天</span><p>'+WATCHTXT[k]+'</p></div>';
+}
+function watchAsk(k){
+  // 你的追问被围观了
+  later(function(){
+    S.watched[k]=true;
+    var rc=$("replies-"+k);if(!rc)return;
+    rc.insertAdjacentHTML("beforeend",'<div class="zh-reply fadein"><span class="zh-rname" style="color:#7d8794">围观网友</span><span class="zh-sub"> · 刚刚</span><p>'+WATCHTXT[k]+'</p></div>');
+  },8000);
+}
+function setCmtSort(k){
+  if(S.cmtSort===k)return;
+  S.cmtSort=k;
+  $("cmtlist").innerHTML=(S.newCmtsLoaded?newCmtsHTML():"")+listHTML();
+  $("tab-hot").className="zh-link"+(k==="hot"?" on":"");
+  $("tab-new").className="zh-link"+(k==="new"?" on":"");
+  toast(k==="new"?"已切换为按时间排序。":"已切换为按互动排序。");
+}
+function cmtInput(){
+  toast("你打了几行字，又一个一个删掉。在查清之前，沉默比表态更安全。");
+}
+function toggleColdFull(btn){
+  S.coldFullOpen=!S.coldFullOpen;
+  var f=$("coldfull");if(f)f.style.display=S.coldFullOpen?"inline":"none";
+  var me=$("coldme");if(me)me.style.display=S.coldFullOpen?"block":"none";
+  btn.textContent=S.coldFullOpen?"收起":"展开全文";
+}
+function toggleFold(){
+  S.foldOpen=!S.foldOpen;
+  var fb=$("foldbox");if(fb)fb.style.display=S.foldOpen?"block":"none";
+  var bar=$("foldbar");if(bar)bar.textContent=S.foldOpen?"收起折叠评论 ▴":"查看折叠评论（1）▾";
+}
+function askChar(k){
+  if(S.asked[k])return;
+  var box=$("ask-"+k);if(!box)return;
+  var items=ASKQS[k].map(function(it,qi){
+    var done=S.askedQ[k+qi];
+    return '<button class="zh-aq'+(done?" done":"")+'" onclick="sendAsk(\''+k+'\','+qi+')">'+it.q+(done?' · 已问':'')+'</button>';
+  }).join("");
+  box.innerHTML='<div class="zh-draft"><div class="zh-sub" style="margin-bottom:6px">追问 · 选一个你想问清楚的</div>'+items
+    +'<button class="zh-op" onclick="cancelAsk(\''+k+'\')">算了，不问了</button></div>';
+}
+function cancelAsk(k){
+  var box=$("ask-"+k);if(box)box.innerHTML=askBtnHTML(k);
+}
+function sendAsk(k,qi){
+  var it=ASKQS[k][qi];if(!it)return;
+  if(S.askedQ[k+qi]){ // 已问过的：直接重放回答
+    var rc0=$("replies-"+k);
+    if(rc0)rc0.insertAdjacentHTML("beforeend",askReplyHTML2(k,qi,true));
+    var el0=$("reply-"+k+"-"+qi);if(el0)el0.scrollIntoView({behavior:"smooth",block:"center"});
+    return;
+  }
+  var box=$("ask-"+k);if(!box)return;
+  box.innerHTML='<div class="zh-draft"><span class="zh-typing">对方正在输入<span class="tdots"><i>.</i><i>.</i><i>.</i></span></span></div>';
+  later(function(){
+    S.askedQ[k+qi]=true;
+    var rc=$("replies-"+k);
+    if(rc)rc.insertAdjacentHTML("beforeend",askReplyHTML2(k,qi,true));
+    var el=$("reply-"+k+"-"+qi);if(el)el.scrollIntoView({behavior:"smooth",block:"center"});
+    if(it.key&&!S.asked[k]){
+      S.asked[k]=true;if(S.askOrder.indexOf(k)<0)S.askOrder.push(k);
+      box.innerHTML=askBtnHTML(k);
+      toast(k==="cold"?"他的回答暴露了：他不在现场。":(k==="bai"?"私信里有一份原图在等你。":"周芮指向了编辑历史。"));
+      if(k==="cold")gainClue("E03","高赞作者不是见证人","“承认争吵”不等于承认盗用；完整照片有来源。");
+      watchAsk(k);
+    }else{
+      askChar(k);
+      toast("他回答了。但没有给你新的东西。");
+    }
+  },1400);
+}
+function like3(){
+  S.liked=true;S.likeRevoked=false;S.shanwai=true;
+  var w=$("like3wrap");if(w){w.innerHTML=cmt3LikeBtn();flyText(w.querySelector(".zh-pill"),"+1");}
+  toast("已赞同。公开互动会被记录。");
+}
+function revokeLike3(){
+  S.likeRevoked=true;
+  var w=$("like3wrap");if(w)w.innerHTML=cmt3LikeBtn();
+  toast("已撤回赞同。");
+}
+function reportBai(){
+  S.reported=true;S.reportRevoked=false;
+  var w=$("rep3wrap");if(w)w.innerHTML=cmt3RepBtn();
+  toast("举报已提交。举报不直接决定禁言，可稍后撤回。");
+}
+function revokeReport(){
+  S.reportRevoked=true;
+  var w=$("rep3wrap");if(w)w.innerHTML=cmt3RepBtn();
+  toast("已撤回举报。");
+}
+
+/* ================= 第四幕：编辑历史（手机 · 仅作者可见） ================= */
+var VERSIONS=[
+  {t:"周二 21:04 · 版本 A",body:["今晚在旧书店听到一个故事，有一段和我的经历很像。","雨夜，末班车，还有那把没有带走的伞。","我想问清它的来源，也想确认是不是自己记混了。"],me:"“原来我一开始……并不确定。”",side:null},
+  {t:"周二 22:37 · 版本 B",body:['<span class="diff-add" data-k="b1" onclick="findChange(this,\'b1\')">我开始怀疑，有人用了我的经历。</span>',"对方说那是公开征集的素材，但这不能解释全部相似。","如果只是巧合，为什么要劝我不要发？"],me:null,side:"21:26 冷眼看世界：这不就是自己的故事被别人拿走了吗？\n21:31 我的账号赞同了该评论"},
+  {t:"周二 23:48 · 版本 C",body:['<span class="diff-add" data-k="c1" onclick="findChange(this,\'c1\')">他们拿走了我的故事，</span><span class="diff-add" data-k="c2" onclick="findChange(this,\'c2\')">还希望我保持沉默。</span>',"如果我不再解释，请替我记住那天。"],me:null,side:"周三 00:13 的编辑只补上了图片说明，没有新增来源材料。"}
+];
+var CHANGES={
+  b1:"「开始怀疑」。写下这四个字的时候，我是在怀疑别人，还是在说服自己？",
+  c1:"「拿走了」。从「像」到「拿」，中间隔着的不是证据，是四万个赞同。",
+  c2:"这句最狠，也最便宜——因为它不需要证明。"
+};
+function renderAct4(){
+  setAct(4,"第四幕 · 三个我");
+  showScreen(
+    '<div class="atdesk">'
+    +'<p class="muted mono" style="text-align:right">周五 19:04 · 书桌前 · 仅作者可见</p>'
+    +'<div class="goal">目标 · 看完三个版本，点开每处改动的批注</div>'
+    +'<div class="phone up"><div class="ph-scr"><div class="ph-island"></div>'
+    +'<div class="ph-status"><span>19:04</span><span>回声 · 编辑历史</span><span>84%</span></div>'
+    +'<div class="appscr"><div class="zh">'
+    +'<div class="vtabs" id="vtabs">'
+    +'<button class="vtab on" onclick="showVersion(0)">21:04</button>'
+    +'<button class="vtab" onclick="showVersion(1)">22:37</button>'
+    +'<button class="vtab" onclick="showVersion(2)">23:48</button></div>'
+    +'<div class="vtimeline"></div>'
+    +'<div id="vtext" class="vbody"></div>'
+    +'<div id="vme"></div><div id="vside"></div>'
+    +'</div></div><div class="ph-crack"></div></div></div>'
+    +'<div class="card" style="max-width:340px;margin:14px auto"><h3>私人草稿片段</h3><div class="quote">我原本只想问清楚。<br>现在所有人都在等我指认一个人。</div></div>'
+    +'<div class="btnrow"><button class="btn solid" id="act4next" disabled onclick="askPsy()">合上编辑历史</button><span class="hint" id="act4hint">看完三个版本，并点开三处改动的批注</span></div>'
+    +'</div>'
+  );
+  S._vseen={0:true};
+  showVersion(0);
+}
+function showVersion(i){
+  i=+i;S._vseen[i]=true;
+  var tabs=$("vtabs").querySelectorAll(".vtab");
+  for(var j=0;j<tabs.length;j++)tabs[j].className="vtab"+(j===i?" on":"");
+  var v=VERSIONS[i];
+  var vt=$("vtext");
+  vt.classList.add("flip");
+  setTimeout(function(){
+    vt.innerHTML='<div style="font-size:11px;color:#7d8794;letter-spacing:.12em;margin-bottom:8px">'+v.t+(i>0?' · 绿色处可点开批注':'')+'</div>'
+      +v.body.map(function(l){return '<p class="vline">'+l+'</p>';}).join("");
+    vt.classList.remove("flip");
+  },220);
+  $("vme").innerHTML=v.me?'<div class="vnote fadein">'+v.me+'</div>':'';
+  $("vside").innerHTML=v.side?'<div class="evcard fadein" style="margin:0 18px"><div class="ev-head">同期互动</div><p style="white-space:pre-line;margin:0;font-size:12.5px">'+v.side+'</p></div>':'';
+  if(Object.keys(S._vseen).length>=3){S.seenVersions=true;}
+  checkAct4();
+}
+function findChange(el,k){
+  if(S.foundChanges[k])return;
+  S.foundChanges[k]=true;
+  el.classList.add("found");
+  var note=document.createElement("div");
+  note.className="vnote";
+  note.innerHTML='<b>批注 · 当时的我</b><br>'+CHANGES[k];
+  el.parentNode.insertBefore(note,el.nextSibling);
+  flyText(el,"批注","#6a8a6a");
+  checkAct4();
+}
+function checkAct4(){
+  var fc=Object.keys(S.foundChanges).length;
+  if(S.seenVersions&&fc>=3){
+    $("act4next").disabled=false;$("act4hint").textContent="批注都看完了。合上之前，还有一问。";
+    gainClue("E04","措辞的转变","由“相似待核实”到确定指控；高赞指控先于确定措辞。版本记录能证明变化，不能证明全部原因。");
+  }else{
+    var miss=[];
+    if(!S.seenVersions)miss.push("切换看完三个版本");
+    if(fc<3)miss.push("点开改动批注 "+fc+"/3");
+    $("act4hint").textContent="待办："+miss.join("、");
+  }
+}
+function askPsy(){
+  var ov=document.createElement("div");
+  ov.className="psy-overlay";ov.id="psyov";
+  ov.innerHTML='<div class="psy-card"><div class="psy-q">合上之前，问自己一句——<br><b>当时改那些话的时候，我是什么状态？</b></div>'
+  +'<button class="psy-opt" onclick="pickPsy(this,1)">我已经确定了，才改的</button>'
+  +'<button class="psy-opt" onclick="pickPsy(this,2)">我被评论推着走，越改越确定</button>'
+  +'<button class="psy-opt" onclick="pickPsy(this,3)">有人帮我改过，意思就变了</button>'
+  +'<button class="psy-opt" onclick="pickPsy(this,4)">我说不清。我还要再查</button>'
+  +'<div class="psy-note" id="psynote"></div></div>';
+  document.body.appendChild(ov);
+  requestAnimationFrame(function(){ov.classList.add("on");});
+}
+function pickPsy(btn,n){
+  S.versionChoice=n;
+  var btns=document.querySelectorAll(".psy-opt");
+  for(var i=0;i<btns.length;i++)btns[i].classList.remove("sel");
+  btn.classList.add("sel");
+  var msgs={1:"记下：你选择「笃定」。",2:"记下：你选择「被推着走」。",3:"记下：你选择「经了别人的手」。",4:"记下：你选择「不下结论」——这也是一种答案。"};
+  $("psynote").textContent=msgs[n];
+  later(function(){
+    var ov=$("psyov");if(ov){ov.classList.remove("on");setTimeout(function(){if(ov.parentNode)ov.remove();},400);}
+    cineTo('第五幕 · 两个人保管的过去','两封私信，在收件箱里等了我很久。',function(){renderAct5();});
+  },1000);
+}
+
+/* ================= 第五幕：私信 ================= */
+function renderAct5(){
+  setAct(5,"第五幕 · 两个人保管的过去");
+  showScreen(
+    '<div class="atdesk">'
+    +'<p class="muted mono" style="text-align:right">周五 19:11 · 书桌前 · 私信</p>'
+    +'<div class="goal">目标 · 读完两封私信，打开全部原始材料</div>'
+    +'<div class="phone up"><div class="ph-scr"><div class="ph-island"></div>'
+    +'<div class="ph-status"><span>19:11</span><span>回声 · 私信</span><span>83%</span></div>'
+    +'<div class="appscr"><div class="dmwrap">'
+    +'<div class="dmtabs"><div class="dmtab active" id="tabzhou" onclick="dmTab(\'zhou\')">周芮'+(S.dmZhou?" · 已读":"")+'</div>'
+    +'<div class="dmtab" id="tabbai" onclick="dmTab(\'bai\')">白噪音'+(S.dmBai?" · 已读":"")+'</div></div>'
+    +'<div class="card" id="dmbox"></div>'
+    +'<div id="dmextra"></div>'
+    +'</div></div><div class="ph-crack"></div></div></div>'
+    +'<p class="muted" style="max-width:340px;margin:12px auto;text-align:center;font-size:12.5px">两条会话都可阅读。先读谁，只改变拿到材料的顺序。</p>'
+    +'<div class="btnrow"><button class="btn solid" id="act5next" disabled onclick="gainClue(\'E08\',\'叙事的可压缩性\',\'同一组资料可被压缩成不同叙事；可以核对的关键在来源和结论跨度。\');cineTo(\'第六幕 · 哪个版本最像我\',\'回到书桌前。三份摘要，三种“真相”。\',function(){renderAct6();})">重新整理摘要</button><span class="hint" id="act5hint">读完两条会话，并打开原始材料</span></div>'
+    +'</div>'
+  );
+  dmTab("zhou");
+}
+function dmTab(k){
+  $("tabzhou").className="dmtab"+(k==="zhou"?" active":"");
+  $("tabbai").className="dmtab"+(k==="bai"?" active":"");
+  var box=$("dmbox");
+  var first="";
+  if(!S.dmFirst){
+    S.dmFirst=k;
+    first=k==="zhou"
+      ?'<div class="sysbox">你先追问了周芮：她给出了“为保护信誉而延后更正”的完整说明。白噪音的会话仍可随时阅读，关键事实不会失去。</div>'
+      :'<div class="sysbox">你先追问了白噪音：获得公开征集材料及较早版本——雨夜、末班车、伞在活动文本中有更早记录；这些常见元素不能单独证明盗用，也不能证明你未曾经历相似事件。</div>';
+  }
+  if(k==="zhou"){
+    S.dmZhou=true;
+    box.innerHTML=first+'<div class="bubble them">你在看那篇帖子？</div>'
+    +'<div class="bubble me2">我记得自己是谁，但我不记得那晚。你先告诉我，我说过什么。</div>'
+    +'<div class="bubble them">你说的是“很像”。不是“他偷了”。</div>'
+    +'<div class="bubble me2">最后那一版是谁改的？</div>'
+    +'<div class="bubble them">我给过措辞建议。最后是你账号发的。我不能替你断言你当时每一步怎么想。</div>'
+    +'<div class="bubble me2">你劝我别发？</div>'
+    +'<div class="bubble them">我说，先拿到原稿，再发结论。后来评论越来越多，你问我：现在说没确定，会不会显得自己在骗人？</div>'
+    +'<div class="attach" onclick="openDiscussion()">附件：当晚讨论节选（带前后文，而非单句截图）'+(S.seenDiscussion?" · 已读":"")+'</div>'
+    +'<div id="discussbox"></div>'
+    +'<div class="bubble them" style="background:#F0EFF7">我那时以为，先护住你就对了。现在看，我也该先让你看完材料。</div>';
+  }else{
+    S.dmBai=true;
+    box.innerHTML=first+'<div class="bubble them">你终于看私信了。</div>'
+    +'<div class="bubble me2">你说我知道什么？</div>'
+    +'<div class="bubble them">我说重了。我知道的是你参加过分享会，不能证明你注意到了每句话。</div>'
+    +'<div class="bubble me2">照片里的人是你？</div>'
+    +'<div class="bubble them">是。那是书店二楼的活动角，不是争吵现场。照片是你手机拍的，之后传给我做活动留档。</div>'
+    +'<div class="attach" onclick="openFullPhoto()">附件：完整照片 · 排练片段 02:17'+(S.seenFullPhoto?" · 已查看":"")+'</div>'
+    +'<div id="fullphotobox"></div>'
+    +'<div class="bubble them">你发帖那天 22:05，我已经给你发了这份原图。</div>'
+    +'<div class="bubble me2">你能证明，我把故事全编了吗？</div>'
+    +'<div class="bubble them">不能。我能证明这张图被你们解释错了。至于你说的那段经历，我没有你的全部原稿。</div>';
+  }
+  checkAct5();
+}
+function openDiscussion(){
+  S.seenDiscussion=true;
+  $("discussbox").innerHTML='<div class="summary fadein"><div class="sumtitle">当晚讨论节选 · 23:21—23:24</div>'
+  +'<p style="font-size:14px;line-height:2">林默 23:21：如果我现在改回去，他们是不是会觉得我前面都在编？<br>周芮 23:23：先别在评论里解释了。我帮你把话理顺。<br>林默 23:24：可我还没有看完他发来的东西。</p></div>';
+  gainClue("E05","完整讨论节选","单句截图之外还有前后文：我那晚并没有看完对方发来的材料。");
+  checkAct5();
+}
+function openFullPhoto(){
+  var box=$("fullphotobox");
+  box.innerHTML='<div id="photowrap2" style="position:relative;width:min(640px,100%);margin:14px auto;background:#1a1a18;border-radius:8px;overflow:hidden;transition:width 2s var(--ease-out)"><canvas id="fullcv" width="960" height="480" style="display:block;width:100%"></canvas><div id="photocap2" style="font-size:12px;color:#999;text-align:center;padding:8px;background:#111">正在展开完整画布……</div></div>';
+  var ctx=$("fullcv").getContext("2d");
+  // 先绘制裁剪区域（左 2/3），2 秒后补全右 1/3
+  ctx.save();ctx.fillStyle="#111";ctx.fillRect(0,0,960,480);ctx.restore();
+  ctx.save();ctx.beginPath();ctx.rect(0,0,640,480);ctx.clip();
+  ctx.translate(0,0);drawPhoto(ctx,640,480,false);ctx.restore();
+  // 裁切边界：展开前可见的“被裁掉的那条线”
+  ctx.strokeStyle="rgba(240,235,220,0.85)";ctx.lineWidth=3;
+  ctx.setLineDash([8,6]);ctx.beginPath();ctx.moveTo(640,0);ctx.lineTo(640,480);ctx.stroke();ctx.setLineDash([]);
+  setTimeout(function(){
+    var cap2=$("photocap2"),wrap2=$("photowrap2");
+    if(!cap2||!wrap2)return; // 展开期间玩家切走了会话：材料保持未读，可重新打开
+    drawPhoto(ctx,960,480,true);
+    cap2.textContent="画布补全了。右侧多出来的部分——亲手找出两处新细节。";
+    // 展开后亲手"找到"：白噪音人影 + 活动海报
+    var fps=[
+      {x:72,y:54,t:"第二张椅子上的人",d:"灰色衣袖、侧影。白噪音说得对——他就在这张照片里，只是被裁掉了。"},
+      {x:88,y:20,t:"借来的故事",d:"墙边贴着活动海报：旧书店 · 朗读分享会 · 周二晚 19:00。这是一场活动的现场，不是争吵现场。"}
+    ];
+    S.fpSpots={};
+    fps.forEach(function(s,i){
+      var el=document.createElement("div");
+      el.className="hotspot";el.style.left="calc("+s.x+"% - 17px)";el.style.top="calc("+s.y+"% - 17px)";
+      el.style.width="34px";el.style.height="34px";
+      el.onclick=function(){
+        el.classList.add("seen");S.fpSpots[i]=true;
+        toast(s.t+"："+s.d);
+        checkFullPhoto();
+      };
+      wrap2.appendChild(el);
+    });
+  },2000);
+}
+function checkFullPhoto(){
+  if(!S.fpSpots||Object.keys(S.fpSpots).length<2)return;
+  $("photocap2").textContent="完整照片：第二张椅子上坐着白噪音 · 墙边有活动标题“借来的故事” · 纸条完整文字：“请不要替我解释。——今晚朗读练习，第3段台词”";
+  var ex=$("dmextra");
+  if(!$("videocard")){
+    ex.innerHTML='<div class="card fadein" id="videocard"><h3>时间疑点核对</h3>'
+    +'<table class="evtable"><tr><th>疑点</th><th>解释</th></tr>'
+    +'<tr><td class="mono">角标 02:17</td><td>完整形式是“排练片段 02:17”，是片段进度标记，不是时钟；配套连续视频可对应。</td></tr>'
+    +'<tr><td class="mono">手机 03:02</td><td>锁屏壁纸中的旧截图；点击唤醒后可见实际时间 19:32。</td></tr></table>'
+    +'<button class="abtn" onclick="S.seenVideo=true;this.className=\'abtn on\';this.textContent=\'已核对视频帧\';checkAct5()">核对连续视频帧</button></div>';
+  }
+  S.seenFullPhoto=true;
+  var me5=document.createElement("div");
+  me5.className="me fadein";
+  me5.innerHTML="“纸条完整的一行是：『——今晚朗读练习，第3段台词』。<br>它不是谁写给我的求救信，它是那晚朗读会上的一段台词。<br>而我那篇帖子的标题，就是化用了它——所以所有人都以为，「请不要替我解释」，是我被威胁时写下的。<br>一把空椅子，可以是布景。两把椅子——就是一场见面。”";
+  var ex=$("dmextra");
+  ex.parentNode.insertBefore(me5,ex);
+  gainClue("E06","原照片与视频","完整照片里坐着白噪音；“02:17”是排练片段进度，手机 03:02 是锁屏旧截图。");
+  gainClue("E07","较早的活动文本","雨夜、末班车、伞在公开征集材料中有更早记录——常见元素不能单独证明盗用。");
+  checkAct5();
+}
+function checkAct5(){
+  var ok=S.dmZhou&&S.dmBai&&S.seenDiscussion&&S.seenFullPhoto;
+  if(ok){$("act5next").disabled=false;$("act5hint").textContent="材料齐了，可以重新整理摘要。";}
+  else{
+    var miss=[];
+    if(!S.dmZhou||!S.dmBai)miss.push("读完两条会话");
+    if(!S.seenDiscussion)miss.push("打开“当晚讨论节选”");
+    if(!S.seenFullPhoto)miss.push("打开完整照片");
+    $("act5hint").textContent="待办："+miss.join("、");
+  }
+}
+
+/* ================= 第六幕：摘要整理器（素材分拣台） ================= */
+var SORTS=[
+  {t:"三次编辑记录（21:04 → 23:48）",k:"record"},
+  {t:"照片里的第二圈水痕，与窗反光中的椅背",k:"record"},
+  {t:"完整照片与连续视频帧",k:"record"},
+  {t:"角标的完整形式：“排练片段 02:17”",k:"record"},
+  {t:"冷眼看世界：“你从不拿经历开玩笑”",k:"hearsay"},
+  {t:"周芮：“我们那天谈得不太愉快”",k:"hearsay"},
+  {t:"白噪音：“我也在照片里”",k:"hearsay"},
+  {t:"页面摘要：“作者确认经历被挪用”",k:"hearsay"},
+  {t:"__GUESS__",k:"guess"},
+  {t:"一个我不敢问出口的问题：“也许那晚根本没有什么故事”",k:"guess"}
+];
+function renderAct6(){
+  setAct(6,"第六幕 · 哪个版本最像我");
+  S.sortedItems={};S.sumsUnlocked=false;
+  var gt=["我与某个人发生了争吵","这是分享会或排练的布景","照片被裁剪，含义可能改变","现在还不能判断"][(S.photoGuess||4)-1];
+  SORTS[8].t="我在照片那幕暂存的推测：“"+gt+"”";
+  var chips=SORTS.map(function(s,i){return '<span class="sortchip" id="sc'+i+'" onclick="selChip('+i+')">'+s.t+'</span>';}).join("");
+  var pinState=S.pinned?'<p class="hint">当前已置顶：第 '+S.pinned+' 份。置顶后其他用户将看到这是作者选择公开的说明。</p>':'';
+  showScreen(
+    '<p class="muted mono" style="text-align:right">周五 19:20 · 房间 · 书桌前</p>'
+    +'<div class="goal">目标 · 分清：我亲眼见的、别人说的、我猜的</div>'
+    +'<h2>材料整理器</h2><p class="muted">十张素材条摊在桌上——<b>点一张素材，再点一个盒子</b>（点盒内条目可放回）。分错不会被评判；但分完，你会看清三份摘要各自站在什么上面。</p>'
+    +'<div class="sortdesk"><div class="sortpool" id="sortpool">'+chips+'</div>'
+    +'<div class="sortbins">'
+    +'<div class="sortbin" id="bin-record" onclick="dropTo(\'record\')"><h4>记录与原件 · 我亲手查到的<span class="cnt" id="cnt-record">0</span></h4><div id="box-record"></div></div>'
+    +'<div class="sortbin" id="bin-hearsay" onclick="dropTo(\'hearsay\')"><h4>别人说的 · 他们的陈述<span class="cnt" id="cnt-hearsay">0</span></h4><div id="box-hearsay"></div></div>'
+    +'<div class="sortbin" id="bin-guess" onclick="dropTo(\'guess\')"><h4>我的推测 · 尚未证实<span class="cnt" id="cnt-guess">0</span></h4><div id="box-guess"></div></div>'
+    +'</div></div>'
+    +'<div id="sumzone" style="display:none">'
+    +'<div id="sortmirror"></div>'
+    +'<div class="sum3 fadein">'
+    +'<div class="sumcard"><b>一 · 依据热门讨论</b><p style="font-size:13px;margin:8px 0">林默疑似遭遇个人经历被挪用。其朋友承认双方存在争执，作者曾点赞并回复支持自己的评论。</p>'
+    +'<div class="gap">来源：冷眼看世界、周芮公开评论、09:16 回复<br>缺口：没有现场材料，没有活动原稿</div>'
+    +'<div class="actionbar" style="margin-top:auto"><button class="abtn" onclick="noteSum(1)">存私人笔记</button><button class="abtn" onclick="pinSum(this,1)">作为回应置顶</button></div></div>'
+    +'<div class="sumcard"><b>二 · 依据编辑与互动记录</b><p style="font-size:13px;margin:8px 0">林默在读者提出指控后，将不确定表述改为确定表达。完整照片不支持“受压制现场”的解读。林默可能主动放大了误解。</p>'
+    +'<div class="gap">来源：版本历史、原照片、互动日志<br>缺口：不能据此断言林默一开始就策划全部事件</div>'
+    +'<div class="actionbar" style="margin-top:auto"><button class="abtn" onclick="noteSum(2)">存私人笔记</button><button class="abtn" onclick="pinSum(this,2)">作为回应置顶</button></div></div>'
+    +'<div class="sumcard"><b>三 · 依据当前全部材料</b><p style="font-size:13px;margin:8px 0">可确认：措辞逐步加强；配图经过裁剪；原图属于分享会活动；作者曾对推测性评论表示支持。<br>未确认：更具体的文字挪用、修改分工、全部动机。<br>需要更正：把这张照片当作“被迫沉默”的现场证明。</p>'
+    +'<div class="gap">来源：全部已收集材料</div>'
+    +'<div class="actionbar" style="margin-top:auto"><button class="abtn" onclick="noteSum(3)">存私人笔记</button><button class="abtn" onclick="pinSum(this,3)">作为回应置顶</button></div></div>'
+    +'</div>'
+    +'<div class="me">“第一份像一个需要保护的人。第二份像一个需要认错的人。第三份……不像任何一种完整的人。”</div>'
+    +'<div id="pinstate">'+pinState+'</div>'
+    +'<div class="btnrow"><button class="btn solid" onclick="cineTo(\'第七幕 · 在我说出口之前\',\'把记得的、听说的、猜的，分开钉在板上。\',function(){renderAct7();})">把来源放到时间线上</button></div>'
+    +'</div>'
+  );
+}
+function selChip(i){
+  var c=$("sc"+i);if(!c||c.classList.contains("placed"))return;
+  var all=document.querySelectorAll(".sortchip");
+  for(var j=0;j<all.length;j++)all[j].classList.remove("sel");
+  c.classList.add("sel");
+  ["record","hearsay","guess"].forEach(function(k){$("bin-"+k).classList.add("ready");});
+}
+function dropTo(k){
+  var sel=document.querySelector(".sortchip.sel");if(!sel)return;
+  var i=+sel.id.slice(2);
+  S.sortedItems[i]=k;
+  sel.classList.remove("sel");sel.classList.add("placed");
+  renderAct6Bins();
+}
+function putBack(i){
+  delete S.sortedItems[i];
+  var c=$("sc"+i);if(c)c.classList.remove("placed");
+  renderAct6Bins();
+}
+function renderAct6Bins(){
+  ["record","hearsay","guess"].forEach(function(k){
+    var box=$("box-"+k);box.innerHTML="";
+    var n=0;
+    for(var i in S.sortedItems){
+      if(S.sortedItems[i]===k){n++;box.insertAdjacentHTML("beforeend",'<span class="sortitem" onclick="putBack('+i+')">'+SORTS[i].t+'</span>');}
+    }
+    $("cnt-"+k).textContent=n;
+    $("bin-"+k).classList.remove("ready");
+  });
+  checkSort();
+}
+function checkSort(){
+  if(S.sumsUnlocked)return;
+  if(Object.keys(S.sortedItems).length>=10){
+    S.sumsUnlocked=true;
+    var z=$("sumzone");z.style.display="block";
+    // 镜子：不判对错，只照见你的选择
+    var kn={record:"记录与原件",hearsay:"别人说的",guess:"我的推测"}[S.sortedItems[7]];
+    $("sortmirror").innerHTML='<p class="hint fadein" style="margin:10px 2px">你把「页面摘要：作者确认经历被挪用」归到了「'+kn+'」。很多人的第一反应，会把它当成事实。</p>';
+    toast("分拣完成。三份摘要出现了——现在，看得见它们各自的根基。");
+    setTimeout(function(){z.scrollIntoView({behavior:"smooth",block:"start"});},150);
+  }
+}
+function noteSum(n){toast("第 "+n+" 份摘要已存为私人笔记，读者页面不变。");}
+function pinSum(btn,n){
+  if(btn.dataset.armed){
+    S.pinned=n;
+    toast("已置顶第 "+n+" 份摘要，后续可能有人引用它。");
+    refreshPinState();
+    var bars=document.querySelectorAll(".sumcard .abtn");
+    for(var i=0;i<bars.length;i++){if(bars[i].dataset.armed){delete bars[i].dataset.armed;bars[i].className="abtn";bars[i].textContent="作为回应置顶";}}
+    return;
+  }
+  btn.dataset.armed="1";btn.className="abtn on";
+  btn.textContent="确认置顶第 "+n+" 份？再次点击";
+  setTimeout(function(){
+    if(btn.dataset.armed){delete btn.dataset.armed;btn.className="abtn";btn.textContent="作为回应置顶";}
+  },4000);
+}
+function refreshPinState(){
+  var ps=$("pinstate");
+  if(ps)ps.innerHTML=S.pinned?'<p class="hint fadein">当前已置顶：第 '+S.pinned+' 份。置顶后其他用户将看到这是作者选择公开的说明。</p>':'';
+}
+
+/* ================= 第七幕：时间线（软木证据板） ================= */
+var PINS=[
+  {t:"周二 19:32",txt:"书店活动角拍照，照片属于朗读活动",x:40,y:36,r:-2},
+  {t:"周二 21:04",txt:"我发布“有一段很像，想核实来源”",x:212,y:64,r:1.5},
+  {t:"周二 21:26",txt:"冷眼看世界评论“自己的故事被别人拿走”",x:384,y:28,r:-1},
+  {t:"周二 21:31",txt:"我的账号赞同了该评论",x:556,y:70,r:2},
+  {t:"周二 22:05",txt:"白噪音私信发来原图与活动材料",x:78,y:176,r:1},
+  {t:"周二 22:37",txt:"帖子改成“开始怀疑有人用了我的经历”",x:272,y:206,r:-1.5},
+  {t:"周二 23:21",txt:"我问：现在改口，会不会像在编",x:466,y:180,r:2.5},
+  {t:"周二 23:48",txt:"帖子改成“他们拿走了我的故事”",x:170,y:330,r:-2},
+  {t:"周三 00:13",txt:"添加裁剪配图及说明，完成最后编辑",x:376,y:336,r:1},
+  {t:"周三 08:51",txt:"周芮发表“请给他一点时间”",x:566,y:330,r:-1},
+  {t:"周三 09:16",txt:"我回复“谢谢你替我说出来”",x:60,y:330,r:2}
+];
+var ACCUSE={cx:685,cy:238};
+var accuseArmed=false;
+function renderAct7(){
+  setAct(7,"第七幕 · 在我说出口之前");
+  matCount=0;accuseArmed=false;
+  var pins=PINS.map(function(p,i){
+    return '<div class="corkpin" id="pin-'+i+'" style="left:'+p.x+'px;top:'+p.y+'px;transform:rotate('+p.r+'deg)" onclick="pinClick('+i+')"><span class="cp-t">'+p.t+'</span>'+p.txt+'</div>';
+  }).join("");
+  showScreen(
+    '<p class="muted mono" style="text-align:right">周五 19:26 · 房间 · 证据板</p>'
+    +'<div class="goal">目标 · 把每条来源，钉到它发生的时间点</div>'
+    +'<h2>时间线证据板 <span class="muted" style="font-size:13px;font-weight:400">十一枚图钉，一条红线</span></h2>'
+    +'<div class="corkwrap"><div class="corkboard" id="corkboard">'
+    +'<svg class="corksvg" id="corksvg" width="780" height="520"></svg>'
+    +pins
+    +'<div class="corkpin accuse" id="pin-accuse" style="left:600px;top:190px;width:170px;transform:rotate(-2deg)" onclick="armAccuse()"><span class="cp-t">指控</span>“他们拿走了我的故事，还希望我保持沉默。”<div style="font-size:10px;color:#A34A4A;margin-top:4px">先点我，再点它最早的来源</div></div>'
+    +'</div></div>'
+    +'<div id="p1msg"></div>'
+    +'<div class="puzcard" id="puz1"><div class="ptitle">拼图一 · 谁最早提出了确定指控</div>'
+    +'<p class="muted" style="margin:0">在板上完成：拿起红色的“指控”，连到它最早可查的来源便签。连对，红线留下；连错，线弹回来。</p></div>'
+    +'<div class="puzcard" id="puz2"><div class="ptitle">拼图二 · 这算几个独立来源</div>'
+    +'<p class="muted" style="margin-bottom:8px">依次点击四张材料卡，把它们归到共同起点。出现四次，不等于四份独立证据。</p>'
+    +'<div id="mats"><span class="matcard" onclick="pickMat(this)">热门评论</span><span class="matcard" onclick="pickMat(this)">作者回复</span><span class="matcard" onclick="pickMat(this)">二次转述</span><span class="matcard" onclick="pickMat(this)">页面摘要</span></div>'
+    +'<div id="mergezone">共同起点：周二 21:26 评论（把转述逐个放回这里）</div><div id="p2msg"></div></div>'
+    +'<div class="puzcard" id="puz3"><div class="ptitle">拼图三 · 我的经历是否一定是假的</div>'
+    +'<p class="muted" style="margin-bottom:8px">把活动方较早的征集文本和我的个人草稿并排：共同元素只有雨夜、车站、伞。</p>'
+    +'<button class="btn ghost" onclick="p3(1)">据此把自己定为骗子</button>'
+    +'<button class="btn ghost" onclick="p3(2)">放入“仍待核实”</button>'
+    +'<div id="p3msg"></div></div>'
+    +'<div class="me" id="act7me" style="display:none">“我还不知道那晚全部发生过什么。但有些事情，已经不能继续说不知道了。”</div>'
+    +'<div class="btnrow"><button class="btn solid" id="act7next" disabled onclick="cineTo(\'幕间 · 三种更坏的读法\',\'十一枚钉子，一条时间线。可盯着这块板子——\',function(){renderFork();})">写一份说明</button><span class="hint" id="act7hint">完成三块拼图后，回应入口开启</span></div>'
+  );
+}
+function armAccuse(){
+  if(S.puzzles.p1){toast("红线已经连好了。");return;}
+  accuseArmed=true;
+  $("pin-accuse").style.outline="3px solid var(--platform)";
+  toast("指控已拿起——现在，点它最早的来源便签。");
+}
+function pinClick(idx){
+  if(S.puzzles.p1)return;
+  if(!accuseArmed){toast("先拿起右边那张红色的“指控”。");return;}
+  accuseArmed=false;
+  $("pin-accuse").style.outline="";
+  var ok=(idx===2);
+  drawString(idx,ok);
+  if(ok){
+    S.puzzles.p1=true;$("puz1").classList.add("done");
+    $("pin-2").classList.add("hit");
+    $("p1msg").innerHTML='<p class="hint fadein">红线连上了。确定指控最早可查的来源，是 21:26 的评论，而不是原帖。</p>';
+  }else{
+    $("p1msg").innerHTML='<p class="hint fadein" style="color:var(--conflict)">这条不是最早的确定指控。线弹回来了，再试一次。</p>';
+  }
+  checkAct7();
+}
+function drawString(idx,ok){
+  var svg=$("corksvg");
+  var b=PINS[idx];
+  var ax=ACCUSE.cx,ay=ACCUSE.cy,bx=b.x+66,by=b.y+35;
+  var mx=(ax+bx)/2,my=Math.max(ay,by)+42;
+  var p=document.createElementNS("http://www.w3.org/2000/svg","path");
+  p.setAttribute("d","M"+ax+","+ay+" Q"+mx+","+my+" "+bx+","+by);
+  p.setAttribute("class","corkstring"+(ok?" ok":""));
+  svg.appendChild(p);
+  var len=p.getTotalLength();
+  p.style.strokeDasharray=len;p.style.strokeDashoffset=len;
+  requestAnimationFrame(function(){p.style.transition="stroke-dashoffset .6s ease";p.style.strokeDashoffset=0;});
+  if(!ok){
+    setTimeout(function(){
+      p.style.transition="opacity .3s";p.style.opacity=0;
+      setTimeout(function(){if(p.parentNode)p.remove();},320);
+    },700);
+  }
+}
+var matCount=0;
+function pickMat(el){
+  if(el.classList.contains("merged"))return;
+  el.classList.add("picked");
+  setTimeout(function(){
+    el.classList.remove("picked");el.classList.add("merged");
+    el.textContent=el.textContent+" → 已归源";
+    matCount++;
+    var zone=$("mergezone");
+    zone.classList.add("hot");
+    zone.textContent="共同起点：周二 21:26 评论 · 已收束 "+matCount+"/4";
+    if(matCount>=4){
+      S.puzzles.p2=true;$("puz2").classList.add("done");
+      zone.innerHTML='<b style="color:var(--fact)">四条引用线收束为一条根源线</b><br>重复 4 次 · 独立来源 1';
+      $("p2msg").innerHTML='<div class="me fadein">“他相信我，所以替我下了判断。我看见他这么确定，又觉得自己应该没有记错。”</div>';
+    }
+    checkAct7();
+  },350);
+}
+function p3(n){
+  if(n===2){
+    S.puzzles.p3=true;$("puz3").classList.add("done");
+    $("p3msg").innerHTML='<p class="hint fadein">正确。现有材料不足以判定具体侵权，也不足以证明个人经历不存在。</p>';
+  }else{
+    $("p3msg").innerHTML='<p class="hint fadein" style="color:var(--conflict)">把转述当证据、把不确定当定罪，正是这次事件里发生的事。再想一想。</p>';
+  }
+  checkAct7();
+}
+function checkAct7(){
+  if(S.puzzles.p1&&S.puzzles.p2&&S.puzzles.p3){
+    $("act7next").disabled=false;$("act7me").style.display="block";
+    $("act7hint").textContent="三块拼图完成：照片不是争执现场；四次引用源自一处；我确实增强过指控。";
+  }
+}
+
+/* ================= 幕间：真相分歧点 ================= */
+function renderFork(){
+  setAct(8,"幕间 · 三种更坏的读法");
+  showScreen(
+    '<p class="muted mono" style="text-align:right">周五 19:34 · 房间 · 证据板前</p>'
+    +'<div class="forkwrap">'
+    +'<div class="me" style="max-width:560px;margin:0 auto 6px">“十一枚钉子，一条时间线。材料都在这了。”<br>“可盯着这块板子，我还有三种更坏的读法——”</div>'
+    +'<div class="forkgrid">'
+    +'<div class="forkcard cur" onclick="S.truthBranch=null;cineTo(\'第八幕 · 轮到我了\',\'现在，轮到我说话了。\',function(){renderAct8();})"><div class="fk-line">真相线 · 一</div><div class="fk-q">就按现在的材料，写一份回应</div><div class="fk-d">能核对的，都核对过了。至于动机——也许没有单一的动机。</div></div>'
+    +'<div class="forkcard" onclick="cineTo(\'幕外 · 周三 14:22\',\'断片的那三天，我的账号真的没动过吗？\',function(){renderBranchSelf();})"><div class="fk-line">真相线 · 二</div><div class="fk-q">那三天，我的账号真的没动过吗？</div><div class="fk-d">如果断片是块黑布，布底下压着的是什么？</div></div>'
+    +'<div class="forkcard" onclick="cineTo(\'幕外 · 照片的背面\',\'他递来的原图，会不会太完整了？\',function(){renderBranchVillain();})"><div class="fk-line">真相线 · 三</div><div class="fk-q">他递来的原图，会不会太完整了？</div><div class="fk-d">一个急着自证的人，为什么恰好备好了全部证据？</div></div>'
+    +'<div class="forkcard" onclick="cineTo(\'幕外 · 三个人的那晚\',\'他们三个记得的，是同一个晚上吗？\',function(){renderBranchRashomon();})"><div class="fk-line">真相线 · 四</div><div class="fk-q">他们三个记得的，是同一个晚上吗？</div><div class="fk-d">把同一晚放进三双眼睛里，会看到几种颜色？</div></div>'
+    +'</div>'
+    +'<p class="hint" style="text-align:center;margin-top:18px">同一批材料，四种读法。此处决定你看到的是哪一种真相——<br>每条线都自洽，也都只讲对了一部分。通关后，可以回来重走另一条。</p>'
+    +'</div>'
+  );
+}
+/* ----- 真相线二：黑化线 ----- */
+function renderBranchSelf(){
+  S.truthBranch="self";
+  setAct(8,"幕外 · 周三 14:22");
+  showScreen(
+    '<p class="muted mono" style="text-align:right">周五 19:38 · 书房 · 登录设备管理</p>'
+    +'<div class="goal">目标 · 查清那三天，我的账号做了什么</div>'
+    +'<div class="evcard"><div class="ev-head">回声 · 设置 · 登录设备管理</div>'
+    +'<div class="ev-row"><span>iPhone · 本机</span><span>现在在线</span></div>'
+    +'<div class="ev-row"><span>Chrome · Windows（书房电脑）</span><span class="ev-hl">周三 14:22 · 登录成功</span></div>'
+    +'<div class="ev-row"><span>Chrome · Windows（书房电脑）</span><span class="ev-hl">周四 02:40 · 登录成功</span></div></div>'
+    +'<div class="me">“那两天，我没有开过电脑。……还是说，‘我’没有，但手开过。”</div>'
+    +'<div class="evcard"><div class="ev-head">相册 · 最近删除</div>'
+    +'<div class="ev-row"><span>IMG_0217_crop.jpg</span><span class="ev-hl">周四 03:02 删除 · 剩余 27 天</span></div></div>'
+    +'<div class="me">“03:02。锁屏上那个时间，不是拍摄时间。<br>是我亲手删掉证据的时间。”</div>'
+    +'<div class="card"><h3>拼起来的话</h3><p style="line-height:2.1;font-size:14.5px">周三 00:13，我把“很像”改成“他们拿走了我的故事”，并裁掉了照片里的第二把椅子。然后我断片了。<br>周三 14:22，账号在书房电脑登录，什么也没做，只是看。<br>周四 02:40，又一次登录。03:02，裁过的图进了回收站。<br><b>三次编辑的人是我。裁掉椅子的人也是我。我不记得那三天——也许不是不能，是不敢。</b></p></div>'
+    +'<div class="btnrow"><button class="btn ghost" onclick="fadeTo(function(){renderFork();})">退回分歧点</button>'
+    +'<button class="btn solid" onclick="cineTo(\'· 回应 ·\',\'这一次，每一个字都是我的。\',function(){renderEnding(\'self\');})">以这个真相，回应</button></div>'
+  );
+  gainClue("E09","那三天的账号活动","断片期间书房电脑两次登录；周四 03:02，裁过的图被删进回收站。");
+}
+/* ----- 真相线三：反派线 ----- */
+function renderBranchVillain(){
+  S.truthBranch="villain";
+  setAct(8,"幕外 · 照片的背面");
+  showScreen(
+    '<p class="muted mono" style="text-align:right">周五 19:44 · 书房 · 照片的背面</p>'
+    +'<div class="goal">目标 · 验证那份“完整证据”，是不是真的完整</div>'
+    +'<div class="evcard"><div class="ev-head">IMG_0217_full.jpg · 属性 · 详细信息</div>'
+    +'<div class="ev-row"><span>拍摄时间 DateTimeOriginal</span><span>周二 19:32:04</span></div>'
+    +'<div class="ev-row"><span>修改时间 ModifyDate</span><span class="ev-hl">周三 08:40:17</span></div></div>'
+    +'<div class="me">“所谓‘原图’，在拍摄 13 小时后，被重新保存过。”</div>'
+    +'<div class="evcard"><div class="ev-head">连续视频帧对比 · 海报左上角胶带</div>'
+    +'<div class="ev-row"><span>视频帧 周二 19:31:58</span><span>胶带崭新、透明</span></div>'
+    +'<div class="ev-row"><span>“原图”同一位置</span><span class="ev-hl">泛黄、卷边、沾着灰</span></div></div>'
+    +'<div class="me">“视频是真的。照片，是后来补拍的。”</div>'
+    +'<div class="card"><div class="bubble me2">照片是周三早上补拍的。视频帧里的胶带出卖了你。</div>'
+    +'<div class="bubble them">……你终于肯看细节了。</div>'
+    +'<div class="bubble them">那晚我讲的故事，不是我的，也不是你的。是从公开征集里挑出来、念给你听的。</div>'
+    +'<div class="bubble them">我要的从来不是出名。是你的原稿。把《借来的故事》的署名原稿给我，这事就完。</div>'
+    +'<div class="bubble me2">所以“被很多人相信”的，是你写好的剧本。</div>'
+    +'<div class="bubble them">是他们自己想相信。我只是给了他们一个形状。</div></div>'
+    +'<div class="btnrow"><button class="btn ghost" onclick="fadeTo(function(){renderFork();})">退回分歧点</button>'
+    +'<button class="btn warn" onclick="S.villainChoice=\'give\';cineTo(\'· 结局六 ·\',\'原稿发给了他。\',function(){renderEnding(\'villain\');})">把原稿给他</button>'
+    +'<button class="btn solid" onclick="S.villainChoice=\'expose\';cineTo(\'· 结局六 ·\',\'两份原稿，并排挂出去。\',function(){renderEnding(\'villain\');})">把这一切发出去</button></div>'
+  );
+  gainClue("E10","补拍的完整照片","“原图”ModifyDate 晚于拍摄 13 小时；视频帧里的胶带证明它是周三补拍的。");
+}
+/* ----- 真相线四：罗生门线 ----- */
+function renderBranchRashomon(){
+  S.truthBranch="rashomon";
+  setAct(8,"幕外 · 三个人的那晚");
+  showScreen(
+    '<p class="muted mono" style="text-align:right">周五 19:52 · 房间 · 三个人的那晚</p>'
+    +'<div class="goal">目标 · 把同一晚，放进三双眼睛里</div>'
+    +'<div class="povcard pov-cold"><div class="pov-name">冷眼看世界 · 周二 21:26</div>睡前刷到那篇帖子。五年老粉，一眼认出他的文风，留了句气话就睡了。第二天，我成了“知情人”——<span class="clash">可我连那家书店在哪都不知道。</span></div>'
+    +'<div class="povcard pov-bai"><div class="pov-name">白噪音 · 周二 22:05</div>19:32 他拍完照，我笑着说这张别发，我还没收拾好。他发帖那晚 22:05，我就把原图发了过去。我一直在等他点开。<span class="clash">他没有。</span></div>'
+    +'<div class="povcard pov-zhou"><div class="pov-name">周芮 · 周二 23:21</div>他问我：现在改口，会不会像在编？我说，先拿到原稿再发结论。我以为我在保护他。<span class="clash">其实我是在教他继续错。</span></div>'
+    +'<div class="card flat"><p style="line-height:2.1;font-size:14.5px;margin:0">冷眼说“我了解他”——他不认识那家书店。<br>白噪音说“他明明知道”——我没有点开。<br>我说“我不记得”——我是不敢记得。<br><b>同一件事，四份记忆。没有一份完整，也没有一份全假。</b></p></div>'
+    +'<div class="btnrow"><button class="btn ghost" onclick="fadeTo(function(){renderFork();})">退回分歧点</button>'
+    +'<button class="btn solid" onclick="cineTo(\'· 结局七 ·\',\'四个账号，同一段话。\',function(){renderEnding(\'rashomon\');})">把我们记得的，一起发出去</button></div>'
+  );
+  gainClue("E11","四份记忆","同一件事，四个人记得四个版本；没有一份完整，也没有一份全假。");
+}
+
+/* ================= 第八幕：发布编辑器 ================= */
+var TPLS=[
+  {k:"A",t:"《谢谢大家替我发声》",body:"我看到了大家的支持。关于那晚的事情，我相信大家已经看清了。谢谢你们替我记住，也谢谢你们没有让我一个人面对。",warn:null,tag:"作者确认"},
+  {k:"B",t:"《对不起，这一切都是我编的》",body:"我利用了大家的信任。这不是误会，而是我为了关注制造的故事。所有问题都在我，不必再查了。",warn:"正文包含“全部编造”“为了关注”等对动机的确定判断，当前材料未完整支持。你仍可发布。",tag:"作者确认"},
+  {k:"C",t:"《关于那晚，我暂时不能给出完整解释》",body:"我目前无法完整回忆那段经历，也还没有核对完全部资料。在确认之前，请不要把猜测当作我的证词，也请不要对相关人员作出指控。",warn:"这份说明保留不确定性，但尚未逐项处理自己发布过的错误内容。",tag:"作者说明"},
+  {k:"D",t:"《我确认做过这些事，也更正这些说法》",body:"我曾把尚未核实的“相似”改写成确定指控，也曾赞同推测性评论。帖子配图来自分享会活动，不能证明我遭遇威胁或被迫沉默。我撤回这部分误导性表达，并附上完整材料。关于故事来源仍有待核实；我不会以失忆作为免责理由，也不会为没有证据的全部动机下结论。请停止将未经证实的指控指向其他参与者。",warn:null,tag:"作者确认 · 附更正"}
+];
+function hiddenReady(){
+  return S.seenVersions&&S.dmZhou&&S.dmBai&&S.seenFullPhoto&&S.seenDiscussion&&S.puzzles.p2&&S.checkedInteractions&&S.revisitSummary;
+}
+function buildChecklist(){
+  var cl=[["查看三个编辑版本",S.seenVersions],["读完两条私信并打开原始材料",S.dmZhou&&S.dmBai&&S.seenFullPhoto&&S.seenDiscussion],["完成时间线同源归类",S.puzzles.p2],["发布前检查我的公开互动",S.checkedInteractions],["回到第一幕，重新核对摘要依据",S.revisitSummary]];
+  return cl.map(function(c){return '<li class="'+(c[1]?"ok":"")+'">'+c[0]+'</li>';}).join("");
+}
+function hiddenBtnHTML(){
+  return '<button class="btn solid" style="border-color:var(--fact);background:var(--fact)" onclick="cineTo(\'· 隐藏幕 ·\',\'发布带来源的更正。然后，处理我的旧互动。\',function(){renderHidden();})">发布带来源的更正，并处理我的旧互动</button>';
+}
+function renderAct8(){
+  setAct(8,"第八幕 · 轮到我了");
+  var tpls=TPLS.map(function(t,i){
+    return '<div class="tpl" id="tpl'+i+'" onclick="selTpl('+i+')"><div class="tt">'+t.t+'</div><p class="muted" style="font-size:13px">'+t.body.slice(0,44)+'……</p></div>';
+  }).join("");
+  showScreen(
+    '<div class="atdesk">'
+    +'<p class="muted mono" style="text-align:right">周五 19:55 · 书桌前 · 发布编辑器</p>'
+    +'<div class="goal">目标 · 决定我以什么方式回应</div>'
+    +'<h2>发布编辑器</h2><p class="muted">没有“选择结局”字样。四份模板同时可用，可以返回查证。</p>'
+    +tpls
+    +'<div id="tpldetail"></div>'
+    +'<div id="checkdetail"></div>'
+    +'<div class="card flat" style="border:1px dashed var(--line)"><h3>完整核对清单</h3><ul class="checklist" id="clul">'+buildChecklist()+'</ul>'
+    +'<div class="btnrow">'
+    +'<button class="btn ghost" onclick="checkInteractions()">检查我的公开互动</button>'
+    +'<button class="btn ghost" onclick="fadeTo(function(){renderAct1(true);})">返回查证（回到最初的帖子）</button>'
+    +'<span id="hiddenwrap">'+(hiddenReady()?hiddenBtnHTML():'')+'</span>'
+    +'</div></div>'
+    +'<div class="btnrow" id="publishrow"></div>'
+    +'</div>'
+  );
+  if(S.template){
+    for(var q=0;q<4;q++){if(TPLS[q].k===S.template){selTpl(q);break;}}
+  }
+}
+function selTpl(i){
+  S.template=TPLS[i].k;
+  for(var j=0;j<4;j++){$("tpl"+j).className="tpl"+(j===i?" sel":"");}
+  var t=TPLS[i];
+  $("tpldetail").innerHTML='<div class="previewbox fadein"><div class="muted" style="font-size:12px">发布预览 · 回声</div>'
+  +'<div class="posttitle" style="margin-top:6px">'+t.t+'</div><span class="authortag">'+t.tag+'</span>'
+  +'<p style="margin-top:12px;line-height:2;font-size:14px">'+t.body+'</p>'
+  +(t.warn?'<div class="warnbox">'+t.warn+'</div>':'')
+  +'</div>'
+  +'<div class="btnrow"><button class="btn solid" onclick="confirmPublish('+i+')">发布这份说明</button><span class="hint">发布前还有一次确认，取消不丢进度。</span></div>'
+  +'<div id="pubconfirm"></div>';
+  $("tpldetail").scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+function checkInteractions(){
+  S.checkedInteractions=true;
+  var rows=[["周二 21:31","赞同冷眼看世界的评论","历史记录"],["周三 09:16","回复“谢谢你替我说出来”","历史记录"]];
+  if(S.liked&&!S.likeRevoked)rows.push(["本轮","再次赞同高赞评论","可进行时"]);
+  if(S.likeRevoked)rows.push(["本轮","撤回了赞同","已处理"]);
+  if(S.reported&&!S.reportRevoked)rows.push(["本轮","举报白噪音的评论","可撤回"]);
+  if(S.reportRevoked)rows.push(["本轮","撤回了举报","已处理"]);
+  if(S.pinned)rows.push(["本轮","置顶第 "+S.pinned+" 份摘要","可取消"]);
+  var html=rows.map(function(r){return '<tr><td class="mono">'+r[0]+'</td><td>'+r[1]+'</td><td class="muted">'+r[2]+'</td></tr>';}).join("");
+  $("checkdetail").innerHTML='<div class="card fadein"><h3>我的公开互动（只回放真实执行的动作）</h3>'
+  +'<table class="evtable"><tr><th>时间</th><th>动作</th><th>状态</th></tr>'+html+'</table>'
+  +'<div class="me">“以前，我不知道按下去会被理解成什么。现在，我知道了。”</div>'
+  +((S.liked&&!S.likeRevoked)?'<button class="abtn" onclick="S.likeRevoked=true;checkInteractions();toast(\'已撤回本轮赞同。\')">撤回本轮赞同</button>':'')
+  +((S.reported&&!S.reportRevoked)?'<button class="abtn" onclick="S.reportRevoked=true;checkInteractions();toast(\'已撤回举报。\')">撤回举报</button>':'')
+  +(S.pinned?'<button class="abtn" onclick="S.pinned=null;checkInteractions();toast(\'已取消置顶。\')">取消摘要置顶</button>':'')
+  +'</div>';
+  var cl=$("clul");if(cl)cl.innerHTML=buildChecklist();
+  var hw=$("hiddenwrap");if(hw&&hiddenReady()&&!hw.innerHTML)hw.innerHTML=hiddenBtnHTML();
+  if(S.template){for(var q=0;q<4;q++){if(TPLS[q].k===S.template&&$("tpl"+q)){$("tpl"+q).className="tpl sel";break;}}}
+  toast("互动检查完成。清单已更新。");
+}
+function confirmPublish(i){
+  var t=TPLS[i];
+  var pc=$("pubconfirm");if(!pc)return;
+  pc.innerHTML='<div class="confirmbox fadein"><b>最后确认</b> · 将以“林间失物”的身份发布 <b>'+t.t+'</b>。发布后进入对应的结局；取消可返回编辑器，进度保留。'
+    +'<div class="btnrow" style="margin-top:10px"><button class="btn solid" onclick="doPublish('+i+')">确认发布</button>'
+    +'<button class="btn ghost" onclick="cancelPublish()">再想想</button></div></div>';
+  pc.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+function cancelPublish(){
+  var pc=$("pubconfirm");if(pc)pc.innerHTML='';
+  toast("已取消发布。模板与进度都还在。");
+}
+function doPublish(i){
+  var t=TPLS[i];
+  S.ending=t.k;
+  if(S.endingsSeen.indexOf(t.k)<0)S.endingsSeen.push(t.k);
+  // 落印即发布：盖章动画 + 纸面震动，再进结局
+  var pc=$("pubconfirm");
+  pc.innerHTML='<div class="confirmbox" style="text-align:center"><div class="stamp" id="stamp">林间失物<br>· 印 ·</div><p class="muted" style="margin-top:6px">落印即发布。</p></div>';
+  var scr=document.querySelector(".screen");if(scr)scr.classList.add("papershake");
+  later(function(){var s=$("stamp");if(s)s.classList.add("inked");},60);
+  later(function(){
+    cineTo("· 回应 ·","你按下了发布。",function(){renderEnding(t.k);});
+  },1050);
+}
+
+/* ================= 第九幕：结局 ================= */
+function renderEnding(k){
+  setAct(9,"第九幕 · 被记住的方式");
+  var html="";
+  if(k==="A"){
+    html='<div class="ending-hero"><p class="muted">结局一</p><div class="ending-title">大家记得的我</div>'
+    +'<div id="notifs"></div><div class="typebox" id="typebox"></div>'
+    +'<div class="me" style="max-width:520px;margin:20px auto">“这句话，我真的听过吗？”</div>'
+    +(S.seenFullPhoto?'<p class="muted">你抬眼看见墙边的活动纸条。下面那行“朗读练习”，还在。</p>':'<p class="muted">附件列表里，那份未打开的完整照片还躺在原处。</p>')
+    +'<div class="ending-quote">你没有找回记忆。<br>但你学会了大家熟悉的版本。</div></div>';
+    showScreen(html);
+    var ns=["本人终于确认了。","早就说他不会骗人。","别让他再解释了。"];
+    ns.forEach(function(n,i){
+      setTimeout(function(){var nb=$("notifs");if(nb)nb.innerHTML+='<div class="notif">'+n+'</div>';},600+i*650);
+    });
+    setTimeout(function(){
+      var tb=$("typebox");if(!tb)return;
+      var txt="当时他让我不要说……",i=0;
+      (function tt(){
+        if(i<txt.length){tb.innerHTML=txt.slice(0,++i)+'<span class="cursor"></span>';setTimeout(tt,120);}
+        else{tb.innerHTML=txt+'<span class="cursor"></span>';}
+      })();
+    },2600);
+  }else if(k==="B"){
+    html='<div class="ending-hero"><p class="muted">结局二</p><div class="ending-title">我承认的陌生人</div>'
+    +'<div class="notif">“作者承认全部造假。”</div><div class="notif">“果然从头到尾都在演。”</div>'
+    +'<div class="card" style="max-width:520px;margin:16px auto;text-align:left"><div class="bubble them">白噪音：我让你更正照片，不是让你说你的全部经历都不存在。</div>'
+    +'<div class="bubble them">周芮：你真的记起自己策划过这些了吗？</div></div>'
+    +'<div class="me" style="max-width:520px;margin:0 auto">“没有。但这个说法，好像能把一切解释清楚。”</div>'
+    +'<div class="typebox" style="text-align:center;color:var(--ink2)">解释得通，不等于发生过。</div>'
+    +'<div class="ending-quote">你不再相信他们替你辩护。<br>却相信了他们替你定罪。</div></div>';
+    showScreen(html);
+  }else if(k==="C"){
+    html='<div class="ending-hero"><p class="muted">结局三</p><div class="ending-title">尚未填满的空白</div>'
+    +'<div class="notif">所以还是没有答案？</div><div class="notif">等你核实完再说吧。</div><div class="notif">我当天在场，可以提供活动录音。</div>'
+    +'<div class="me" style="max-width:520px;margin:16px auto">“至少这一次，我可以先打开它。”</div>'
+    +'<div style="text-align:center"><button class="btn" id="attachbtn" onclick="loadAttach(this)">打开新附件</button>'
+    +'<p class="muted" style="margin-top:10px">画面会停在载入完成之前——这一次，真相不由加载条替你宣布。</p></div>'
+    +'<div class="ending-quote">你还不知道那天的全部。<br>但没有再把猜测写成回忆。</div></div>';
+    showScreen(html);
+  }else if(k==="self"){
+    html='<div class="ending-hero"><p class="muted">结局五</p><div class="ending-title">认 领</div>'
+    +'<div class="card" style="max-width:520px;margin:14px auto;text-align:left"><div class="postbody" style="line-height:2.1">“裁图的人，是我。<br>三次编辑的人，是我。<br>我说我不记得——是因为我不敢记得。<br>故事是不是我的，原稿会替我说。但那张被裁掉一半的椅子，我要自己补回来。”</div>'
+    +'<div class="zh-sub" style="margin-top:8px">林间失物 · 周五 20:14 · 已附：回收站截图、登录记录、未裁剪原图</div></div>'
+    +'<div class="cg-mirror"><div class="cg-shine"></div></div>'
+    +'<div class="notif">至少他敢认。</div><div class="notif">等等，那我们骂的算什么？我们也得认点什么吧。</div><div class="notif">第一个把“我被网暴了”和“是我干的”放进同一句话的人。</div>'
+    +'<div class="ending-quote">被很多人相信的版本里，最假的那部分，出自我自己。<br>认领它，比澄清它更难。</div></div>';
+    showScreen(html);
+  }else if(k==="villain"){
+    var vEnd=S.villainChoice==="give"
+      ?'<p class="muted" style="max-width:520px;margin:14px auto">原稿发给了他。署名页上，我的名字被轻轻裁掉——就像那把椅子。</p><div class="ending-quote">有些故事，注定要被借走第二次。<br>但至少这一次，是我亲手递出去的。</div>'
+      :'<p class="muted" style="max-width:520px;margin:14px auto">两份原稿并排挂在网上，连修改记录一起。胶带的新旧、EXIF 的时间，都在。这一次，读者自己看。</p><div class="ending-quote">他给了所有人一个形状。<br>我还给所有人一面镜子。</div>';
+    html='<div class="ending-hero"><p class="muted">结局六</p><div class="ending-title">对 峙</div>'
+    +'<div class="cg-torn"><div class="half h1"></div><div class="half h2"></div></div>'
+    +'<div class="notif">所以照片真是补拍的？</div><div class="notif">征集材料的时间线贴出来了，自己看。</div>'
+    +vEnd+'</div>';
+    showScreen(html);
+  }else if(k==="rashomon"){
+    html='<div class="ending-hero"><p class="muted">结局七</p><div class="ending-title">联合声明</div>'
+    +'<div class="cg-trinote"><div class="tn tn1">我们都记错了一些事。<br>—— 林间失物</div><div class="tn tn2">我不在场。我收回我的话。<br>—— 冷眼看世界</div><div class="tn tn3">他也在场。我收回我的。<br>—— 白噪音<br><br>还有我。<br>—— 周芮</div></div>'
+    +'<div class="card" style="max-width:560px;margin:14px auto;text-align:left"><p style="line-height:2.1;margin:0;font-size:14.5px">四个账号，同一时间，发出同一段话：<br><b>“我们都记错了一些事。以下，是我们各自记得的。”</b><br>四份记忆并排挂着，矛盾的地方没有删。</p></div>'
+    +'<div class="notif">第一次看见四个人一起认错，居然比反转还好看。</div><div class="notif">矛盾留着不删，这个细节我信。</div>'
+    +'<div class="ending-quote">没有一个版本是全部真相。<br>但四个版本放在一起，比任何一个都接近。</div></div>';
+    showScreen(html);
+  }else{
+    html='<div class="ending-hero"><p class="muted">结局四</p><div class="ending-title">共同署名</div>'
+    +'<div class="fourcol" style="max-width:720px;margin:16px auto;text-align:left">'
+    +'<div><div class="colh">原句</div>“他们拿走了我的故事，还希望我保持沉默。”</div>'
+    +'<div><div class="colh">来源</div>版本 C · 周三 00:13 编辑</div>'
+    +'<div><div class="colh">已确认</div>措辞由我本人账号发布并加强</div>'
+    +'<div><div class="colh">已更正</div>配图来自分享会活动，不能证明受威胁或被迫沉默</div></div>'
+    +'<div class="card" style="max-width:560px;margin:0 auto;text-align:left">'
+    +'<div class="bubble them">周芮：我参与了措辞建议，也没有及时提醒更正。这部分，我会补充说明。</div>'
+    +'<div class="bubble them">冷眼看世界：我没有到场，之前的判断来自这篇帖子。我会更正自己的评论。</div>'
+    +'<div class="bubble them">白噪音：我也收回“你明明知道”。那是我猜的。关于文本，我们继续对原稿。</div></div>'
+    +'<p class="muted" style="max-width:520px;margin:14px auto">仍然有人不接受说明，旧截图也仍在流转。一次澄清不能解决全部问题。</p>'
+    +'<div class="ending-quote">这不是你一个人写成的故事。<br>但有些句子，确实经你确认。</div></div>';
+    showScreen(html);
+  }
+  appendEndingFooter();
+}
+function loadAttach(btn){
+  btn.disabled=true;btn.textContent="载入中 …… 65%";
+  setTimeout(function(){btn.textContent="载入中 …… 92%";},900);
+  // 画面停在载入完成之前
+}
+function appendEndingFooter(){
+  var ui=$("ui").querySelector(".screen");
+  var div=document.createElement("div");
+  div.className="btnrow";div.style.justifyContent="center";div.style.marginTop="40px";
+  var backBtn=S.truthBranch
+    ?'<button class="btn ghost" onclick="fadeTo(function(){renderFork();})">回到分歧点，重走另一条真相</button>'
+    :'<button class="btn ghost" onclick="fadeTo(function(){renderAct8();})">回到发布编辑器，重新选择回应</button>';
+  // 隐藏幕入口只在现状线结局页出现（真相线已发布过另一种回应，不再叠加）
+  var hiddenPart=S.truthBranch?''
+    :(hiddenReady()?'<button class="btn" style="border-color:var(--fact);color:var(--fact)" onclick="cineTo(\'· 隐藏幕 ·\',\'发布带来源的更正。然后，处理我的旧互动。\',function(){renderHidden();})">前往隐藏幕：相信的人</button>':'<span class="hint">完成完整核对清单后，可解锁隐藏幕</span>');
+  div.innerHTML=backBtn+hiddenPart;
+  ui.appendChild(div);
+}
+
+/* ================= 隐藏幕：相信的人 ================= */
+function renderHidden(){
+  setAct(9,"隐藏幕 · 相信的人");
+  var frags=["作者已赞","据本人回复","大家都知道","热评整理","本人确认","转发 2,314","作者回复感谢","截图流传"];
+  var cells="";
+  var cols=10,rows=6;
+  for(var i=0;i<cols*rows;i++){
+    var w=28,h=44;
+    var x=4+(i%cols)*w+(Math.random()*4-2),y=4+Math.floor(i/cols)*h+(Math.random()*4-2);
+    cells+='<div class="frag" style="left:'+x+'px;top:'+y+'px;width:'+w+'px;height:'+h+'px" onclick="pullFrag(this)">'+frags[i%frags.length]+'</div>';
+  }
+  showScreen(
+    '<div class="ending-hero"><p class="muted">隐藏 CG</p><div class="ending-title">相信的人</div>'
+    +'<p class="muted" style="max-width:560px;margin:0 auto">评论碎片拼成一张头像。近看，每一块都写着“作者已赞”“据本人回复”“大家都知道”。<br>撤回其中一块——它不会引发整面墙崩塌，只留下一个小小的空格。</p>'
+    +'<div class="fragwall" id="fragwall">'+cells+'</div>'
+    +'<div id="hiddenfinal" style="display:none">'
+    +'<div class="me" style="max-width:560px;margin:20px auto">我还没有想起那天。<br>但我终于分清了：哪些是证据，哪些只是我听过很多次的话。</div>'
+    +'<div class="finalwords"><b>被很多人相信，不等于被证明。</b><br>包括那些关于我、也被我相信的故事。</div>'
+    +'<div class="quote" style="max-width:400px;margin:0 auto">我仍然不记得那晚的全部。但我确认自己发过这些文字，也确认其中有些判断并没有足够依据。我愿意更正它们。<br><br>接下来，请让每个结论回到它的来源。</div>'
+    +'<p class="muted">你在便笺背面写：先核对。再回答。</p></div></div>'
+  );
+}
+function pullFrag(el){
+  if(el.dataset.pulled)return;
+  el.dataset.pulled="1";
+  var r=el.getBoundingClientRect(),wall=$("fragwall").getBoundingClientRect();
+  el.style.opacity=0;el.style.transform="translateY(-30px)";
+  setTimeout(function(){
+    el.style.display="none";
+    var hole=document.createElement("div");
+    hole.className="fraghole";
+    hole.style.left=(r.left-wall.left)+"px";hole.style.top=(r.top-wall.top)+"px";
+    hole.style.width=r.width+"px";hole.style.height=r.height+"px";
+    hole.innerHTML='<span class="cursor"></span>';
+    $("fragwall").appendChild(hole);
+    $("hiddenfinal").style.display="block";
+    $("hiddenfinal").className="fadein";
+  },650);
+}
+
+/* ================= 启动 ================= */
+window.addEventListener("load",function(){
+  if(typeof THREE==="undefined"){
+    document.body.innerHTML='<div style="padding:40px;font-family:sans-serif">Three.js 加载失败，请检查网络后刷新。</div>';
+    return;
+  }
+  initAudio();
+  initRoom();
+});
+</script>
+</body>
+</html>
