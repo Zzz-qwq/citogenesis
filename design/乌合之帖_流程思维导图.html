@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>《乌合之帖》全流程思维导图</title>
+<style>
+:root{--bg:#F4F3EF;--ink:#2B2B28;--ink2:#5a5a54;--line:#D8D5CE;--act:#52677F;--gate:#B08A3C;--fork:#6a5a8a;--end:#A34A4A;--hidden:#8a7a2a;--note:#33655e}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei","PingFang SC",sans-serif;background:var(--bg);color:var(--ink);overflow:hidden}
+#topbar{position:fixed;top:0;left:0;right:0;z-index:10;display:flex;align-items:center;gap:14px;padding:10px 18px;
+  background:rgba(244,243,239,.92);border-bottom:1px solid var(--line);backdrop-filter:blur(4px);flex-wrap:wrap}
+#topbar h1{font-size:16px}
+#topbar .legend{display:flex;gap:12px;font-size:12px;color:var(--ink2);flex-wrap:wrap}
+.lg{display:inline-flex;align-items:center;gap:5px}
+.lg i{width:12px;height:12px;border-radius:3px;display:inline-block}
+#hint{margin-left:auto;font-size:11.5px;color:#8a8a84}
+#stage{position:absolute;inset:0;cursor:grab}
+#stage.drag{cursor:grabbing}
+.node rect{stroke-width:1.5;rx:10}
+.node .nt{font-size:13px;font-weight:700}
+.node .nl{font-size:10.5px;fill:#44443f}
+.node.cond rect{stroke-dasharray:5 3}
+.edge{fill:none;stroke:#9a958a;stroke-width:1.8;marker-end:url(#arr)}
+.edge.back{stroke-dasharray:6 4;stroke:#b0aa9c;marker-end:url(#arrB)}
+.edge .elbl{font-size:9.5px;fill:#8a857a}
+</style>
+</head>
+<body>
+<div id="topbar">
+  <h1>《乌合之帖》流程思维导图</h1>
+  <div class="legend">
+    <span class="lg"><i style="background:#52677F"></i>幕/场景</span>
+    <span class="lg"><i style="background:#B08A3C"></i>解锁条件</span>
+    <span class="lg"><i style="background:#6a5a8a"></i>真相分歧</span>
+    <span class="lg"><i style="background:#A34A4A"></i>结局</span>
+    <span class="lg"><i style="background:#8a7a2a"></i>隐藏幕</span>
+    <span class="lg"><i style="background:#33655e"></i>线索/笔记</span>
+    <span class="lg">[方括号]=按钮</span>
+  </div>
+  <span id="hint">滚轮缩放 · 拖拽平移 · 虚线=回跳</span>
+</div>
+<svg id="stage"><g id="world"></g>
+<defs>
+  <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#9a958a"/></marker>
+  <marker id="arrB" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#b0aa9c"/></marker>
+</defs>
+</svg>
+<script>
+/* 节点：c=act(幕) gate(条件) fork(分歧) end(结局) hidden(隐藏) note(线索) */
+var N=[
+ /* --- 主链 --- */
+ {id:"pro",c:"act",t:"序幕 · 傍晚苏醒",x:40,y:60,lines:["前情字幕×4 [点击跳过]","眨眼苏醒→意识字幕×2","[撑着桌沿站起来]","[走近书桌] 推镜","点 3D 手机 → 第一幕","(远处点手机=提示先走近)"]},
+ {id:"a1",c:"act",t:"第一幕 · 书桌与手机",x:40,y:330,lines:["桌面:便签/茶杯/水痕/椅/手机","[点手机拿起] 锁屏 18:42","[上滑解锁] → 帖子+评论预览","帖内:[查看全文][摘要依据]","[模糊缩略图]→toast 引导去书房","冷眼:[赞同↔撤回] 山外回复浮现","底栏:[总赞][评论][收藏][举报]=toast","[放下手机] ↔ 可再拿起","[去书房,开电脑看原图]→二幕","线索 E01 入笔记"]},
+ {id:"a2",c:"act",t:"第二幕 · 书房电脑",x:40,y:700,lines:["[走向书桌] [按电源键]","BIOS→logo→桌面 开机动画","桌面图标:此电脑/回收站/toast","[IMG_0217.jpg] 打开照片应用","窗口:拖拽/最小化/关闭/缩放/信息","照片 4 热点(咖啡/手机/纸条/窗)","暂存推测 4选1","[离开电脑]↔ 回3D书房","条件:≥2热点+推测 → [合上电脑]","→ 关机画面 → 三幕 · 线索E02"]},
+ /* --- 社区深挖 --- */
+ {id:"a3",c:"act",t:"第三幕 · 评论区",x:330,y:60,lines:["手机框 18:51 · 屏内滚动","[默认|最新] 排序切换","输入框→toast 沉默更安全","冷眼:[赞同↔撤回][展开全文]","[追问]→草稿条→发送→输入中→回复","冷眼追问暴露不在场 =E03","折叠条→白噪音:[追问][举报↔撤回]","周芮:[追问]→指向编辑历史","9秒后[3条新评论]→路人涌入","追问8秒后围观网友+1","[打开编辑历史]→四幕"]},
+ {id:"a4",c:"act",t:"第四幕 · 编辑历史",x:330,y:390,lines:["滑块拖3版本(翻页动画)","B/C版 点3处绿底关键改动","→ 措辞变化清单点亮","私人草稿片段(展示)","[选择当前解释] 4选1","条件:3版本+3改动+1解释","→ [打开私信] → 五幕 · E04"]},
+ {id:"a5",c:"act",t:"第五幕 · 私信",x:330,y:650,lines:["[周芮|白噪音] tab 切换","周芮:附件[当晚讨论节选]=E05","白噪音:附件[完整照片]","→ 2秒展开反转","→ 亲手找2热点(人影/海报)","→ 独白点破纸条=台词","→ 时间疑点核对卡(02:17/03:02)","[核对连续视频帧] 可选","条件:两会话+节选+照片","→ [重新整理摘要] → 六幕","E06 E07 入笔记"]},
+ /* --- 回收与回应 --- */
+ {id:"a6",c:"act",t:"第六幕 · 素材分拣台",x:620,y:60,lines:["10素材条 → [点选]→[点盒子]","三盒:记录原件/别人说/我推测","盒内条目[点击放回]","全归位 → 三摘要卡出现","[存私人笔记] / [置顶]二次确认","[把来源放到时间线上]→七幕"]},
+ {id:"a7",c:"act",t:"第七幕 · 软木证据板",x:620,y:300,lines:["11图钉便签+红色指控签","拼图一:[拿起指控]→[点来源]","→ SVG红线 连对=21:26评论","拼图二:4材料卡[点击归源]","拼图三:[仍待核实] 2选1","条件:三块拼图全完成","→ [写一份说明] → 分歧点"]},
+ {id:"fork",c:"fork",t:"幕间 · 真相分歧点",x:620,y:540,lines:["同一批材料,四种读法","[现状线] → 第八幕","[黑化线] → 幕外·周三14:22","[反派线] → 幕外·照片背面","[罗生门线] → 幕外·三个人的那晚","(各线可退回分歧点)"]},
+ {id:"bs",c:"fork",t:"幕外 · 黑化线",x:910,y:330,lines:["登录设备管理:周三/四两次","相册回收站:周四03:02删裁图","揭示:编辑+裁图都是自己","断片=不敢记得 · E09","[以这个真相,回应]"]},
+ {id:"bv",c:"fork",t:"幕外 · 反派线",x:910,y:530,lines:["EXIF:修改晚于拍摄13小时","视频帧胶带新旧不一=补拍","私信摊牌:他要署名原稿","E10 · [把原稿给他]/[全发出去]"]},
+ {id:"br",c:"fork",t:"幕外 · 罗生门线",x:910,y:720,lines:["冷眼/白噪音/周芮 三视角卡","矛盾点标红 · E11","[把记得的,一起发出去]"]},
+ {id:"a8",c:"act",t:"第八幕 · 发布编辑器",x:910,y:60,lines:["4模板稿纸 [选中]→预览","[检查我的公开互动] 日志回放","[返回查证]→一幕revisit","→[独立证明在哪]=循环引用","核对清单5项 → 隐藏入口","[发布]→二次确认→盖章落印"]},
+ /* --- 结局 --- */
+ {id:"e14",c:"end",t:"结局 1-4",x:1190,y:60,lines:["一 大家记得的我","二 我承认的陌生人","三 尚未填满的空白","四 共同署名","[回发布编辑器]"]},
+ {id:"e5",c:"end",t:"结局五 · 认领",x:1190,y:330,lines:["发布:裁图的人是我","镜中双人影 CG"]},
+ {id:"e6",c:"end",t:"结局六 · 对峙",x:1190,y:500,lines:["撕裂照片 CG","给/不给 双收尾文案"]},
+ {id:"e7",c:"end",t:"结局七 · 联合声明",x:1190,y:720,lines:["四账号同发一段话","三色便签 CG"]},
+ {id:"eh",c:"hidden",t:"隐藏幕 · 相信的人",x:1450,y:200,lines:["碎片墙:9枚转述标签","[撤回一块] 亲自拆引用","解锁:三版本+私信材料","+同源归类+互动检查","+一幕重核对(5条件)"]},
+ {id:"notes",c:"note",t:"调查笔记(全程)",x:1450,y:470,lines:["右上角常驻按钮","E01-E11 自动记入","玩家主动翻阅,不怼脸"]}
+];
+var E=[
+ ["pro","a1"],["a1","a2"],["a2","a3"],["a3","a4"],["a4","a5"],["a5","a6"],["a6","a7"],["a7","fork"],
+ ["fork","a8","现状"],["fork","bs","黑化"],["fork","bv","反派"],["fork","br","罗生门"],
+ ["a8","e14"],["bs","e5"],["bv","e6"],["br","e7"],["a8","eh","5条件"],["e14","eh","可前往"],
+ ["bs","fork","退回",1],["bv","fork","退回",1],["br","fork","退回",1],
+ ["e14","a8","重选",1],["e5","fork","重走",1],["e6","fork","重走",1],["e7","fork","重走",1],
+ ["a8","a1","返回查证",1],["a2","a2","离开/再走回",1]
+];
+var CC={act:"#52677F",gate:"#B08A3C",fork:"#6a5a8a",end:"#A34A4A",hidden:"#8a7a2a",note:"#33655e"};
+var world=document.getElementById("world");
+var nodes={};
+function layout(n){var w=176,h=30+n.lines.length*16+10;n.w=w;n.h=h;nodes[n.id]=n;}
+N.forEach(layout);
+var svgNS="http://www.w3.org/2000/svg";
+function el(t,at){var e=document.createElementNS(svgNS,t);for(var k in at)e.setAttribute(k,at[k]);return e;}
+/* 边 */
+E.forEach(function(e){
+  var a=nodes[e[0]],b=nodes[e[1]],back=e[3];
+  var x1=a.x+a.w,y1=a.y+a.h/2,x2=b.x,y2=b.y+b.h/2;
+  if(back){x1=a.x+a.w/2;y1=a.y+(b.y>a.y?a.h:0);x2=b.x+b.w/2;y2=b.y+(b.y>a.y?0:b.h);}
+  var mx=(x1+x2)/2;
+  var p=el("path",{d:"M"+x1+","+y1+" C"+mx+","+y1+" "+mx+","+y2+" "+x2+","+y2","class":"edge"+(back?" back":"")});
+  world.appendChild(p);
+  if(e[2]){
+    var t=el("text",{x:(x1+x2)/2+4,y:(y1+y2)/2-4,"class":"elbl"});
+    t.textContent=e[2];world.appendChild(t);
+  }
+});
+/* 节点 */
+N.forEach(function(n){
+  var g=el("g",{"class":"node","transform":"translate("+n.x+","+n.y+")"});
+  var c=CC[n.c];
+  g.appendChild(el("rect",{width:n.w,height:n.h,rx:10,fill:"#fff",stroke:c}));
+  g.appendChild(el("rect",{width:5,height:n.h,rx:2,fill:c}));
+  var t=el("text",{x:14,y:20,"class":"nt",fill:c});t.textContent=n.t;g.appendChild(t);
+  n.lines.forEach(function(l,i){
+    var y=38+i*16;
+    var lt=el("text",{x:14,y:y,"class":"nl"});lt.textContent=l;g.appendChild(lt);
+  });
+  world.appendChild(g);
+});
+/* 缩放平移 */
+var svg=document.getElementById("stage"),vx=0,vy=0,sc=0.82;
+function apply(){world.setAttribute("transform","translate("+vx+","+vy+") scale("+sc+")");}
+apply();
+var drag=null;
+svg.addEventListener("mousedown",function(e){drag={x:e.clientX-vx,y:e.clientY-vy};svg.classList.add("drag");});
+window.addEventListener("mousemove",function(e){if(drag){vx=e.clientX-drag.x;vy=e.clientY-drag.y;apply();}});
+window.addEventListener("mouseup",function(){drag=null;svg.classList.remove("drag");});
+svg.addEventListener("wheel",function(e){
+  e.preventDefault();
+  var k=e.deltaY<0?1.1:0.9,ns=Math.min(2.2,Math.max(0.3,sc*k));
+  var r=svg.getBoundingClientRect(),px=e.clientX-r.left,py=e.clientY-r.top;
+  vx=px-(px-vx)*ns/sc;vy=py-(py-vy)*ns/sc;sc=ns;apply();
+},{passive:false});
+/* 触屏 */
+svg.addEventListener("touchstart",function(e){var t=e.touches[0];drag={x:t.clientX-vx,y:t.clientY-vy};},{passive:true});
+svg.addEventListener("touchmove",function(e){if(drag){var t=e.touches[0];vx=t.clientX-drag.x;vy=t.clientY-drag.y;apply();}},{passive:true});
+svg.addEventListener("touchend",function(){drag=null;});
+</script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-# 已被很多人相信
+# 乌合之帖
 
 > 一个关于"一句话如何被滚成事实"的第一人称信息解谜游戏。
 > 游戏本体是单个 HTML，音频在 `game/assets/audio/` 下（BGM 93s 无缝循环 + 开/关机音效）。
@@ -29,13 +29,17 @@
 ## 包结构
 
 ```
-已被很多人相信/
-├─ index.html         跳转页（GitHub Pages 入口 → game/）
-├─ design/            设计笔记（分幕结构、真相线、美术与交互规范）
-├─ game/              可玩游戏
-│   ├─ index.html     游戏本体（单文件 HTML）
-│   └─ assets/audio/  BGM 主线循环 / 开机音 / 关机音
-├─ scripts/           辅助脚本（open-game.bat 一键启动）
+citogenesis/
+├─ index.html               跳转页（GitHub Pages 入口 → game/）
+├─ design/                  设计笔记
+│   ├─ design-notes.md      分幕结构、真相线、美术与交互规范
+│   └─ 乌合之帖_流程思维导图.html
+├─ game/                    可玩游戏
+│   ├─ index.html           游戏本体（单文件 HTML）
+│   └─ assets/
+│       ├─ audio/           BGM 主线循环 / 开机音 / 关机音
+│       └─ img/cover.jpg    封面图
+├─ scripts/                 辅助脚本（open-game.bat 一键启动）
 └─ README.md
 ```
 

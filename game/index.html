@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>已被很多人相信 · 游戏初稿</title>
+<title>乌合之帖 · 游戏初稿</title>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <style>
 :root{
@@ -62,6 +62,48 @@ p{line-height:1.85;font-size:15px}
 #prologueText{font-size:clamp(18px,2.6vw,26px);color:#3a3a36;text-align:center;line-height:2.2;letter-spacing:.12em;
   text-shadow:0 1px 0 rgba(255,255,255,.6)}
 #prologueHint{margin-top:26px;font-size:13px;color:var(--ink2);opacity:0;transition:opacity .8s;letter-spacing:.2em}
+/* 前情过渡 + 睁眼醒来（此前丢失，2026-09-15 补回） */
+#wake{position:fixed;inset:0;z-index:50;cursor:pointer}
+#wake .wk-half{position:absolute;left:0;right:0;height:50.5%;background:#060504}
+#wake .wt{top:0}#wake .wb{bottom:0}
+#foreword{position:absolute;inset:0;z-index:2;display:flex;align-items:center;justify-content:center;transition:opacity 1s}
+.fw-line{position:absolute;max-width:min(640px,86%);text-align:center;font-size:clamp(17px,2.4vw,24px);
+  color:#b3ac9e;letter-spacing:.14em;line-height:2.3;animation:fwIn 2.3s ease both}
+@keyframes fwIn{0%{opacity:0;transform:translateY(12px)}14%{opacity:1;transform:none}78%{opacity:1}100%{opacity:0}}
+#wakeskip{position:absolute;right:26px;bottom:22px;z-index:3;font-size:11px;color:#5a564d;letter-spacing:.3em}
+/* ===== 初始封面（整图 + 呼吸动效） ===== */
+#cover{position:fixed;inset:0;z-index:65;display:flex;align-items:center;overflow:hidden;
+  background:#EDE3D0;transition:opacity 1s ease,visibility 1s}
+#cover.gone{opacity:0;visibility:hidden;pointer-events:none}
+.cv-bg{position:absolute;inset:-4%;background:url("assets/img/cover.jpg") center/cover no-repeat;
+  animation:cvKen 46s ease-in-out infinite alternate;will-change:transform}
+@keyframes cvKen{from{transform:scale(1)}to{transform:scale(1.04) translate(-0.8%,0.6%)}}
+.cv-frags{position:absolute;inset:0;pointer-events:none;z-index:2}
+.cv-frag{position:absolute;pointer-events:auto;cursor:pointer;font-size:13px;color:rgba(74,58,44,.62);
+  background:rgba(245,239,226,.85);border:1px solid rgba(255,252,246,.9);border-radius:999px;padding:5px 13px;
+  box-shadow:0 3px 10px rgba(90,70,40,.14);backdrop-filter:blur(2px);animation:cvFloat linear infinite;user-select:none;white-space:nowrap;
+  transform:translate(calc(var(--px,0)*var(--depth,1)*40px),calc(var(--py,0)*var(--depth,1)*40px));
+  transition:font-size .4s,background .4s,opacity .6s}
+@keyframes cvFloat{0%,100%{margin-top:0}50%{margin-top:-26px}}
+.cv-frag.pop{background:#fff;color:#3a3a36;border-color:#fff;box-shadow:0 8px 24px rgba(60,40,20,.25);
+  animation:none;font-size:14px;z-index:3}
+.cv-frag.fade{opacity:0}
+.cv-inner{position:relative;z-index:2;text-align:left;padding:0 20px;max-width:560px;margin-left:9%;
+  transform:translate(calc(var(--px,0)*-14px),calc(var(--py,0)*-14px))}
+.cv-kicker{font-size:13px;letter-spacing:.34em;color:rgba(74,58,44,.75);margin-bottom:22px}
+.cv-title{font-family:'KaiTi','STKaiti',serif;font-size:clamp(40px,6.5vw,74px);color:#33291f;letter-spacing:.12em;font-weight:700;
+  text-shadow:0 1px 0 rgba(255,252,246,.6)}
+.cv-title span{display:inline-block;opacity:0;animation:cvChar .8s var(--ease-out) both}
+@keyframes cvChar{from{opacity:0;transform:translateY(18px);filter:blur(4px)}to{opacity:1;transform:none;filter:none}}
+.cv-rule{width:64px;height:2px;background:#33291f;margin:26px 0 22px;opacity:.7}
+.cv-sub{font-size:15px;line-height:2.2;color:rgba(58,47,38,.85);letter-spacing:.1em}
+.cv-start{margin-top:38px;background:#33291f;color:#F2E4CE;border:none;border-radius:999px;
+  padding:14px 58px;font-size:16px;letter-spacing:.42em;text-indent:.42em;cursor:pointer;font-family:inherit;
+  transition:all .3s;box-shadow:0 12px 30px rgba(58,47,38,.35)}
+.cv-start:hover{transform:translateY(-2px);box-shadow:0 18px 40px rgba(58,47,38,.42);background:#4a3c30}
+.cv-meta{margin-top:26px;font-size:11.5px;letter-spacing:.2em;color:rgba(74,58,44,.6)}
+.cv-tip{position:absolute;bottom:26px;right:30px;text-align:right;font-size:11px;letter-spacing:.24em;color:rgba(74,58,44,.5);z-index:2}
+@media (max-width:640px){.cv-inner{margin-left:6%;max-width:88%}}
 #fader{position:fixed;inset:0;background:var(--bg);z-index:60;opacity:0;pointer-events:none;transition:opacity .9s ease}
 #fader.on{opacity:1;pointer-events:all}
 /* 帖子 */
@@ -471,6 +513,17 @@ p{line-height:1.85;font-size:15px}
 .sortchip.sel{outline:2px solid var(--platform);transform:translateY(-3px) rotate(-1deg)}
 .sortchip.placed{opacity:.4;pointer-events:none}
 .sortbins{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+/* 回声处理台 */
+.echocard{border-left:3px solid var(--platform);background:#fff;border-radius:0 8px 8px 0;padding:12px 14px;margin:12px 0;
+  box-shadow:0 4px 12px rgba(43,43,40,.07)}
+.echocard b{font-size:13.5px}
+.echoR p{margin:0}
+.demochip{display:inline-block;background:#f6f1df;border:1px solid #d8cfae;border-radius:8px;padding:8px 12px;
+  font-size:12.5px;box-shadow:0 6px 14px rgba(70,50,20,.25);transition:all 1.1s cubic-bezier(.3,.9,.3,1);position:relative}
+.demochip:before{content:"点击";position:absolute;left:-38px;top:9px;font-size:10px;color:#8a6a3a;letter-spacing:.1em}
+.demochip.fly{transform:translate(66px,104px) scale(.86);opacity:.85}
+.demochip.gone{opacity:0;transform:translate(66px,104px) scale(.7)}
+.demotip{display:inline-block;margin-left:12px;font-size:11.5px;color:#6d5c3e;letter-spacing:.08em}
 .sortbin{background:rgba(250,249,246,.92);border:2px dashed #b8a888;border-radius:12px;min-height:130px;
   padding:10px;transition:all .25s;cursor:pointer}
 .sortbin.ready{border-color:var(--platform);background:#fff;transform:scale(1.01)}
@@ -539,8 +592,24 @@ p{line-height:1.85;font-size:15px}
 .psy-opt:hover{border-color:var(--platform);transform:translateX(3px)}
 .psy-opt.sel{border-color:var(--platform);background:#EDF1F5;box-shadow:0 0 0 1px var(--platform)}
 .psy-note{font-size:12px;color:#8a6a2a;margin-top:10px;min-height:18px}
+/* ===== 追问按钮（醒目对话气泡） ===== */
+.ask-bubble{display:inline-flex;align-items:center;gap:7px;background:#1E88C7;color:#fff;border:none;
+  border-radius:18px 18px 18px 4px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;
+  box-shadow:0 6px 16px rgba(30,136,199,.35);transition:all .25s;letter-spacing:.03em}
+.ask-bubble:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(30,136,199,.45);background:#2596da}
+.ask-bubble:active{transform:translateY(0)}
+.ask-bubble .ab-ic{font-size:15px;line-height:1}
+.ask-bubble.on{background:#8a94a2;box-shadow:none;cursor:default;opacity:.75}
+.ask-done{display:inline-flex;align-items:center;gap:6px;color:#8a94a2;font-size:12px;padding:6px 10px}
 /* ===== 私信浅色 App 页 ===== */
 .dmwrap{background:#F4F3EF;min-height:100%;padding:12px 12px 20px;border-radius:0}
+/* ===== 回看工具条（六幕起常驻） ===== */
+.peekbar{display:flex;gap:10px;justify-content:center;margin:0 auto 16px;flex-wrap:wrap}
+.peekbtn{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);
+  border-radius:999px;padding:8px 18px;font-size:12.5px;color:var(--ink2);cursor:pointer;
+  box-shadow:0 4px 12px rgba(43,43,40,.08);transition:all .25s}
+.peekbtn:hover{transform:translateY(-2px);box-shadow:0 8px 18px rgba(43,43,40,.14);color:var(--platform);border-color:var(--platform)}
+.peekbtn .pb-ic{font-size:15px}
 /* ===== 序幕叙事按钮 / 意识字幕 ===== */
 #probtns{display:flex;flex-direction:column;align-items:center;gap:12px;pointer-events:none;margin-top:18px}
 .probtn{pointer-events:auto;background:rgba(250,249,246,.88);border:1px solid rgba(82,103,127,.4);color:var(--platform);
@@ -625,6 +694,19 @@ h2{letter-spacing:.02em}
 </style>
 </head>
 <body>
+<div id="cover">
+  <div class="cv-bg"></div>
+  <div class="cv-frags" id="cvfrags"></div>
+  <div class="cv-inner">
+    <div class="cv-kicker">一个关于「转述」的第一人称互动故事</div>
+    <h1 class="cv-title" id="cvtitle">乌合之帖</h1>
+    <div class="cv-rule"></div>
+    <div class="cv-sub">被很多人相信的，不一定是真的——<br>它可能只是被很多人，转述过。</div>
+    <button class="cv-start" onclick="startGame()">进 入</button>
+    <div class="cv-meta">多周目 · 8 种结局 · 约 20 分钟 · 建议佩戴耳机</div>
+  </div>
+  <div class="cv-tip">点一片漂浮的碎片看看</div>
+</div>
 <div id="wake"><div class="wk-half wt"></div><div class="wk-half wb"></div><div id="foreword"></div><div id="wakeskip">点 击 跳 过</div></div>
 <div id="stage3d"></div>
 <div id="prologue">
@@ -645,14 +727,14 @@ h2{letter-spacing:.02em}
 
 <script>
 /* ============================================================
-   《已被很多人相信》 可玩初稿
+   《乌合之帖》 可玩初稿
    依据：完整分幕剧本 + 美术与交互设计方案
    ============================================================ */
 var S = {
   act:0,
   liked:false, likeRevoked:false, shanwai:false,
   reported:false, reportRevoked:false, favorited:false,
-  asked:{}, photoSpots:{},
+  asked:{}, photoSpots:{}, photoGuessSet:{},
   photoGuess:null, versionChoice:null, seenVersions:false,
   dmZhou:false, dmBai:false, seenDiscussion:false, seenFullPhoto:false, seenVideo:false,
   askOrder:[],
@@ -739,7 +821,7 @@ function makePosterTexture(){
   x.strokeStyle="#52677F";x.lineWidth=6;x.strokeRect(14,14,228,356);
   x.fillStyle="#52677F";x.font="bold 44px 'PingFang SC','Microsoft YaHei',sans-serif";
   x.fillText("借来的",48,120);x.fillText("故事",70,178);
-  x.fillStyle="#9A9A96";x.font="18px sans-serif";x.fillText("旧书店 · 朗读分享会",38,250);
+  x.fillStyle="#9A9A96";x.font="18px sans-serif";x.fillText("旧书店 · 分享会 · 周二晚",38,250);
   x.font="14px sans-serif";x.fillText("周二晚 19:00 二楼活动角",36,290);
   return new THREE.CanvasTexture(c);
 }
@@ -877,15 +959,55 @@ function initRoom(){
       }
     }
   });
-  foreword();
   animateRoom();
 }
 var fwTimer=null;
+/* ================= 初始封面 ================= */
+var CVFRAGS=["作者已赞","据本人回复","大家都知道","热评整理","本人确认","转发 2,314","截图流传","朋友证实","据说","有图有真相","内部消息","我朋友在場"];
+function buildCover(){
+  var box=$("cvfrags");
+  CVFRAGS.forEach(function(t){
+    var f=document.createElement("span");
+    f.className="cv-frag";f.textContent=t;
+    f.style.left=(6+Math.random()*86)+"%";
+    f.style.top=(8+Math.random()*78)+"%";
+    f.style.animationDuration=(9+Math.random()*8)+"s";
+    f.style.animationDelay=(-Math.random()*10)+"s";
+    f.style.setProperty("--depth",(0.4+Math.random()).toFixed(2));
+    f.onclick=function(){fragTap(this);};
+    box.appendChild(f);
+  });
+  // 标题逐字浮现
+  var t=$("cvtitle"),txt=t.textContent;t.innerHTML="";
+  for(var i=0;i<txt.length;i++){
+    var sp=document.createElement("span");sp.textContent=txt[i];
+    sp.style.animationDelay=(0.35+i*0.13)+"s";t.appendChild(sp);
+  }
+  // 鼠标视差
+  document.addEventListener("mousemove",function(e){
+    var c=$("cover");if(!c||c.classList.contains("gone"))return;
+    c.style.setProperty("--px",(e.clientX/window.innerWidth-0.5).toFixed(3));
+    c.style.setProperty("--py",(e.clientY/window.innerHeight-0.5).toFixed(3));
+  });
+}
+function fragTap(el){
+  if(el.classList.contains("pop"))return;
+  el.classList.add("pop");
+  el.textContent="“"+el.textContent+"”——不是原话";
+  setTimeout(function(){el.classList.add("fade");},1300);
+}
+function startGame(){
+  var c=$("cover");
+  startBGM();
+  c.classList.add("gone");
+  setTimeout(function(){c.style.display="none";},1100);
+  foreword();
+}
 function foreword(){
   var lines=[
     "周一晚上，我在改一篇拖了很久的稿。",
-    "周二，帖子发出去了。<br>后来，它就被很多人相信了。",
-    "周三凌晨之后的事——<br>我不记得了。",
+    "周二，帖子发出去了。<br>一夜之间，所有人都信了。",
+    "周三凌晨之后——<br>我的记忆，是空的。",
     "今天，周五。傍晚。"
   ];
   var el=$("foreword"),i=0,done=false;
@@ -1116,12 +1238,20 @@ function renderAct1(revisit){
     +'<div class="me">“周五？我记得……周一晚上，我还在改那篇稿。”</div>'
   );
   // 从序幕点击手机进入 = 已经拿起；回查证时直接解锁到帖子
-  if(revisit){pickPhone(true);}else{pickPhone();}
+  if(revisit){pickPhone(true);}
+  else{pickPhone();}
+}
+function backToTask(){
+  if(peekFrom){peekBack();}
+  else{fadeTo(function(){renderAct8();});}
 }
 function pickPhone(skipLock){
   if($("phoverlay"))return;
   var ov=document.createElement("div");
   ov.className="ph-overlay";ov.id="phoverlay";
+  ov.addEventListener("click",function(e){ // 只有手机本体和放下按钮可交互，其余区域轻晃提示
+    if(e.target===ov||e.target.id==="ovnotes"){toast("先看手机。想放回去，点下面的「放下手机」。");}
+  });
   ov.innerHTML='<div class="phone" id="phoneframe"><div class="ph-scr"><div class="ph-island"></div>'
     +'<div class="ph-status"><span>18:42</span><span id="phstitle"></span><span>87%</span></div>'
     +'<div class="appscr" id="appscr">'+appScreenHTML(S.revisitMode)+'</div>'
@@ -1150,10 +1280,10 @@ function refreshPhunder(unlocked){
       +'<span class="hint" style="align-self:center">先解锁——它们想让我看的，都在里面。</span>';
   }else if(S.revisitMode){
     u.innerHTML='<button class="btn ghost" onclick="putDownPhone()">放下手机</button>'
-      +'<button class="btn solid" onclick="closePhoneOverlay();fadeTo(function(){renderAct8();})">返回发布编辑器</button>';
+      +'<button class="btn solid" onclick="closePhoneOverlay();backToTask()">回到手头的事</button>';
   }else{
     u.innerHTML='<button class="btn ghost" onclick="putDownPhone()">放下手机</button>'
-      +'<button class="btn solid" onclick="closePhoneOverlay();cineTo(\'第二幕 · 照片里少了一把椅子\',\'手机上的图太模糊。书房电脑里，存着这张照片的原文件。\',function(){renderAct2();})">去书房，开电脑看原图</button>';
+      +'<button class="btn solid" onclick="closePhoneOverlay();cineTo(\'第二幕 · 02:17\',\'手机上的图太模糊。书房电脑里，存着这张照片的原文件。\',function(){renderAct2();})">去书房，开电脑看原图</button>';
   }
 }
 function unlockPhone(instant){
@@ -1682,9 +1812,9 @@ function drawPhoto(ctx,W,H,full){
     ctx.fillStyle="#EAE6DB";ctx.fillRect(760,42,178,108);
     ctx.strokeStyle="#52677F";ctx.lineWidth=4;ctx.strokeRect(766,48,166,96);
     ctx.fillStyle="#52677F";ctx.font="bold 26px 'KaiTi','STKaiti',serif";ctx.textAlign="center";
-    ctx.fillText("借来的故事",849,96);
+    ctx.fillText("旧书店 · 分享会",849,96);
     ctx.fillStyle="#8a8578";ctx.font="11px sans-serif";
-    ctx.fillText("旧书店 · 朗读分享会",849,122);
+    ctx.fillText("周二晚 19:00 · 朗读与交流",849,122);
     // 右侧暗部书架剪影
     ctx.fillStyle="rgba(10,12,16,0.55)";ctx.fillRect(910,110,50,280);
   }else{
@@ -1743,7 +1873,7 @@ function showWindowsDesktop(){
   +'<p class="muted" style="font-size:12px;color:#7a6d2a">画面是一间昏暗的房间：咖啡、裂屏手机、纸条、开着的窗。<b>点击照片上发光的圆点查看细节。</b></p>'
   +'<div id="spotinfo"></div>'
   +'<div class="me" style="background:#f5e9c0">“杯子是我的。手机也是。可我为什么要拍它们？”</div>'
-  +'<div style="font-weight:600;font-size:12px;margin:8px 0 4px">暂存推测（私人笔记，不改变公开摘要）</div>'
+  +'<div style="font-weight:600;font-size:12px;margin:8px 0 4px">暂存推测（私人笔记，可多选；选“现在还不能判断”会清空其他）</div>'
   +'<div id="guessbtns">'
   +'<button class="btn ghost" onclick="pickGuess(this,1)">我与某个人发生了争吵</button>'
   +'<button class="btn ghost" onclick="pickGuess(this,2)">这是分享会或排练的布景</button>'
@@ -1835,19 +1965,30 @@ function initPhotoCanvas(){
     if(S.photoSpots[i])el.classList.add("seen");
     wrap.appendChild(el);
   });
-  if(S.photoGuess){
+  if(S.photoGuessSet){
     var gbtns=$("guessbtns").querySelectorAll(".btn");
-    if(gbtns[S.photoGuess-1])gbtns[S.photoGuess-1].className="btn";
-    $("guessnote").innerHTML='<p class="hint" style="color:#8a7d3a">已暂存为“我的推测”（你上次的选择已保留）。</p>';
+    for(var gi=0;gi<gbtns.length;gi++){
+      if(S.photoGuessSet[gi+1])gbtns[gi].className="btn";
+    }
+    $("guessnote").innerHTML='<p class="hint" style="color:#8a7d3a">已暂存的推测已保留。</p>';
   }
   checkAct2();
 }
 function pickGuess(btn,n){
-  S.photoGuess=n;
-  var btns=$("guessbtns").querySelectorAll(".btn");
-  for(var i=0;i<btns.length;i++)btns[i].className="btn ghost";
-  btn.className="btn";
-  $("guessnote").innerHTML='<p class="hint fadein">已暂存为“我的推测”。选择进入私人笔记，不产生传播后果。</p>';
+  if(!S.photoGuessSet)S.photoGuessSet={};
+  if(n===4){ // "不能判断"是排他的
+    S.photoGuessSet={4:true};
+    var all=$("guessbtns").querySelectorAll(".btn");
+    for(var j=0;j<all.length;j++)all[j].className="btn ghost";
+    btn.className="btn";
+  }else{
+    delete S.photoGuessSet[4];
+    btn.className=(btn.className==="btn")?"btn ghost":"btn";
+  }
+  S.photoGuess=Object.keys(S.photoGuessSet).length?+Object.keys(S.photoGuessSet)[0]:null;
+  var names=["我与某个人发生了争吵","这是分享会或排练的布景","照片被裁剪，含义可能改变","现在还不能判断"];
+  var picked=Object.keys(S.photoGuessSet).map(function(k){return names[k-1];});
+  $("guessnote").innerHTML=picked.length?'<p class="hint fadein">已暂存 '+picked.length+' 条推测（'+picked.join("；")+'）。只进私人笔记，不产生传播后果。</p>':'';
   checkAct2();
 }
 function checkAct2(){
@@ -1867,9 +2008,9 @@ function cmt3RepBtn(){
   return S.reported&&!S.reportRevoked?'<button class="zh-op danger on" onclick="revokeReport()">已举报 · 撤回</button>':'<button class="zh-op danger" onclick="reportBai()">举报人身指责</button>';
 }
 function askBtnHTML(k){
-  if(S.asked[k])return '<button class="zh-op" disabled style="opacity:.45;cursor:default">已追问</button>';
-  var label=k==='cold'?'追问“你在现场吗”':(k==='bai'?'追问白噪音':'追问周芮');
-  return '<button class="zh-op" onclick="askChar(\''+k+'\')">'+label+'</button>';
+  if(S.asked[k])return '<span class="ask-done"><span class="ab-ic">✓</span>已问过</span>';
+  var label=k==='cold'?'追问冷眼看世界':(k==='bai'?'追问白噪音':'追问周芮');
+  return '<button class="ask-bubble" onclick="askChar(\''+k+'\')"><span class="ab-ic">💬</span>'+label+'</button>';
 }
 var ASKN={cold:"冷眼看世界",bai:"白噪音",zhou:"周芮"};
 var ASKQS={
@@ -2100,8 +2241,8 @@ function revokeReport(){
 /* ================= 第四幕：编辑历史（手机 · 仅作者可见） ================= */
 var VERSIONS=[
   {t:"周二 21:04 · 版本 A",body:["今晚在旧书店听到一个故事，有一段和我的经历很像。","雨夜，末班车，还有那把没有带走的伞。","我想问清它的来源，也想确认是不是自己记混了。"],me:"“原来我一开始……并不确定。”",side:null},
-  {t:"周二 22:37 · 版本 B",body:['<span class="diff-add" data-k="b1" onclick="findChange(this,\'b1\')">我开始怀疑，有人用了我的经历。</span>',"对方说那是公开征集的素材，但这不能解释全部相似。","如果只是巧合，为什么要劝我不要发？"],me:null,side:"21:26 冷眼看世界：这不就是自己的故事被别人拿走了吗？\n21:31 我的账号赞同了该评论"},
-  {t:"周二 23:48 · 版本 C",body:['<span class="diff-add" data-k="c1" onclick="findChange(this,\'c1\')">他们拿走了我的故事，</span><span class="diff-add" data-k="c2" onclick="findChange(this,\'c2\')">还希望我保持沉默。</span>',"如果我不再解释，请替我记住那天。"],me:null,side:"周三 00:13 的编辑只补上了图片说明，没有新增来源材料。"}
+  {t:"周二 22:37 · 版本 B",body:['<span class="diff-add" data-k="b1">我开始怀疑，有人用了我的经历。</span>',"对方说那是公开征集的素材，但这不能解释全部相似。","如果只是巧合，为什么要劝我不要发？"],me:null,side:"21:26 冷眼看世界：这不就是自己的故事被别人拿走了吗？\n21:31 我的账号赞同了该评论"},
+  {t:"周二 23:48 · 版本 C",body:['<span class="diff-add" data-k="c1">他们拿走了我的故事，</span><span class="diff-add" data-k="c2">还希望我保持沉默。</span>',"如果我不再解释，请替我记住那天。"],me:null,side:"周三 00:13 的编辑只补上了图片说明，没有新增来源材料。"}
 ];
 var CHANGES={
   b1:"「开始怀疑」。写下这四个字的时候，我是在怀疑别人，还是在说服自己？",
@@ -2140,24 +2281,29 @@ function showVersion(i){
   var vt=$("vtext");
   vt.classList.add("flip");
   setTimeout(function(){
-    vt.innerHTML='<div style="font-size:11px;color:#7d8794;letter-spacing:.12em;margin-bottom:8px">'+v.t+(i>0?' · 绿色处可点开批注':'')+'</div>'
+    vt.innerHTML='<div style="font-size:11px;color:#7d8794;letter-spacing:.12em;margin-bottom:8px">'+v.t+(i>0?' · 与上一版不同的话已标出':'')+'</div>'
       +v.body.map(function(l){return '<p class="vline">'+l+'</p>';}).join("");
     vt.classList.remove("flip");
+    // 改动词块自动点亮 + 批注自动展开（切到该版本即读，无需玩家找）
+    var marks=vt.querySelectorAll(".diff-add");
+    for(var mi=0;mi<marks.length;mi++){
+      (function(el){
+        var k=el.getAttribute("data-k");
+        el.classList.add("found");
+        if(!S.foundChanges[k]){
+          S.foundChanges[k]=true;
+          var note=document.createElement("div");
+          note.className="vnote";
+          note.innerHTML='<b>批注 · 当时的我</b><br>'+CHANGES[k];
+          el.parentNode.insertBefore(note,el.nextSibling);
+        }
+      })(marks[mi]);
+    }
+    checkAct4();
   },220);
   $("vme").innerHTML=v.me?'<div class="vnote fadein">'+v.me+'</div>':'';
   $("vside").innerHTML=v.side?'<div class="evcard fadein" style="margin:0 18px"><div class="ev-head">同期互动</div><p style="white-space:pre-line;margin:0;font-size:12.5px">'+v.side+'</p></div>':'';
   if(Object.keys(S._vseen).length>=3){S.seenVersions=true;}
-  checkAct4();
-}
-function findChange(el,k){
-  if(S.foundChanges[k])return;
-  S.foundChanges[k]=true;
-  el.classList.add("found");
-  var note=document.createElement("div");
-  note.className="vnote";
-  note.innerHTML='<b>批注 · 当时的我</b><br>'+CHANGES[k];
-  el.parentNode.insertBefore(note,el.nextSibling);
-  flyText(el,"批注","#6a8a6a");
   checkAct4();
 }
 function checkAct4(){
@@ -2240,7 +2386,7 @@ function dmTab(k){
     +'<div class="bubble them">我说，先拿到原稿，再发结论。后来评论越来越多，你问我：现在说没确定，会不会显得自己在骗人？</div>'
     +'<div class="attach" onclick="openDiscussion()">附件：当晚讨论节选（带前后文，而非单句截图）'+(S.seenDiscussion?" · 已读":"")+'</div>'
     +'<div id="discussbox"></div>'
-    +'<div class="bubble them" style="background:#F0EFF7">我那时以为，先护住你就对了。现在看，我也该先让你看完材料。</div>';
+    +'<div class="bubble them" style="background:#F0EFF7">我那时候只有一个念头：别让他们骂你。<br>别的，都往后放了。</div>';
   }else{
     S.dmBai=true;
     box.innerHTML=first+'<div class="bubble them">你终于看私信了。</div>'
@@ -2282,7 +2428,7 @@ function openFullPhoto(){
     // 展开后亲手"找到"：白噪音人影 + 活动海报
     var fps=[
       {x:72,y:54,t:"第二张椅子上的人",d:"灰色衣袖、侧影。白噪音说得对——他就在这张照片里，只是被裁掉了。"},
-      {x:88,y:20,t:"借来的故事",d:"墙边贴着活动海报：旧书店 · 朗读分享会 · 周二晚 19:00。这是一场活动的现场，不是争吵现场。"}
+      {x:88,y:20,t:"分享会海报",d:"墙边贴着活动海报：旧书店 · 分享会 · 周二晚 19:00。这是一场活动的现场，不是争吵现场。"}
     ];
     S.fpSpots={};
     fps.forEach(function(s,i){
@@ -2300,7 +2446,7 @@ function openFullPhoto(){
 }
 function checkFullPhoto(){
   if(!S.fpSpots||Object.keys(S.fpSpots).length<2)return;
-  $("photocap2").textContent="完整照片：第二张椅子上坐着白噪音 · 墙边有活动标题“借来的故事” · 纸条完整文字：“请不要替我解释。——今晚朗读练习，第3段台词”";
+  $("photocap2").textContent="完整照片：第二张椅子上坐着白噪音 · 墙边有活动海报“旧书店 · 分享会” · 纸条完整文字：“请不要替我解释。——今晚朗读练习，第3段台词”";
   var ex=$("dmextra");
   if(!$("videocard")){
     ex.innerHTML='<div class="card fadein" id="videocard"><h3>时间疑点核对</h3>'
@@ -2331,6 +2477,34 @@ function checkAct5(){
   }
 }
 
+/* ================= 回看工具（六幕起：可随时重看手机与电脑） ================= */
+var peekFrom=null;
+function peekHTML(){
+  return '<div class="peekbar">'
+    +'<button class="peekbtn" onclick="peekGo(\'phone\')"><span class="pb-ic">📱</span>重看手机（最初的帖子）</button>'
+    +'<button class="peekbtn" onclick="peekGo(\'pc\')"><span class="pb-ic">🖥</span>重看电脑（照片原文件）</button>'
+    +'</div>';
+}
+function peekGo(k){
+  peekFrom=S.act;
+  if(k==="phone"){fadeTo(function(){renderAct1(true);});}
+  else{
+    fadeTo(function(){
+      animMode="none";
+      $("stage3d").style.display="none";
+      showWindowsDesktop();
+      // 任务栏换"回到手头的事"
+      var tb=$("ui").querySelector(".taskbar");
+      if(tb)tb.insertAdjacentHTML("beforeend",'<span class="tb-app" onclick="peekBack()" style="background:#52677F;color:#fff">← 回到手头的事</span>');
+    });
+  }
+}
+function peekBack(){
+  fadeTo(function(){
+    var back={6:renderAct6,7:renderAct7,8:renderAct8};
+    (back[peekFrom]||renderAct6)();
+  });
+}
 /* ================= 第六幕：摘要整理器（素材分拣台） ================= */
 var SORTS=[
   {t:"三次编辑记录（21:04 → 23:48）",k:"record"},
@@ -2347,15 +2521,19 @@ var SORTS=[
 function renderAct6(){
   setAct(6,"第六幕 · 哪个版本最像我");
   S.sortedItems={};S.sumsUnlocked=false;
-  var gt=["我与某个人发生了争吵","这是分享会或排练的布景","照片被裁剪，含义可能改变","现在还不能判断"][(S.photoGuess||4)-1];
+  sortDemo();
+  var gnames=["我与某个人发生了争吵","这是分享会或排练的布景","照片被裁剪，含义可能改变","现在还不能判断"];
+  var gset=S.photoGuessSet||{4:true};
+  var gt=Object.keys(gset).map(function(k){return gnames[k-1];}).join("；");
   SORTS[8].t="我在照片那幕暂存的推测：“"+gt+"”";
   var chips=SORTS.map(function(s,i){return '<span class="sortchip" id="sc'+i+'" onclick="selChip('+i+')">'+s.t+'</span>';}).join("");
   var pinState=S.pinned?'<p class="hint">当前已置顶：第 '+S.pinned+' 份。置顶后其他用户将看到这是作者选择公开的说明。</p>':'';
   showScreen(
     '<p class="muted mono" style="text-align:right">周五 19:20 · 房间 · 书桌前</p>'
-    +'<div class="goal">目标 · 分清：我亲眼见的、别人说的、我猜的</div>'
+    +'<div class="goal">目标 · 分清：我亲眼见的、别人说的、我猜的</div>'+peekHTML()
     +'<h2>材料整理器</h2><p class="muted">十张素材条摊在桌上——<b>点一张素材，再点一个盒子</b>（点盒内条目可放回）。分错不会被评判；但分完，你会看清三份摘要各自站在什么上面。</p>'
     +'<div class="sortdesk"><div class="sortpool" id="sortpool">'+chips+'</div>'
+    +'<div id="sortdemo" style="display:none"></div>'
     +'<div class="sortbins">'
     +'<div class="sortbin" id="bin-record" onclick="dropTo(\'record\')"><h4>记录与原件 · 我亲手查到的<span class="cnt" id="cnt-record">0</span></h4><div id="box-record"></div></div>'
     +'<div class="sortbin" id="bin-hearsay" onclick="dropTo(\'hearsay\')"><h4>别人说的 · 他们的陈述<span class="cnt" id="cnt-hearsay">0</span></h4><div id="box-hearsay"></div></div>'
@@ -2365,13 +2543,13 @@ function renderAct6(){
     +'<div id="sortmirror"></div>'
     +'<div class="sum3 fadein">'
     +'<div class="sumcard"><b>一 · 依据热门讨论</b><p style="font-size:13px;margin:8px 0">林默疑似遭遇个人经历被挪用。其朋友承认双方存在争执，作者曾点赞并回复支持自己的评论。</p>'
-    +'<div class="gap">来源：冷眼看世界、周芮公开评论、09:16 回复<br>缺口：没有现场材料，没有活动原稿</div>'
+    +'<div class="gap" id="gap1">来源：冷眼看世界、周芮公开评论、09:16 回复<br>缺口：没有现场材料，没有活动原稿</div>'
     +'<div class="actionbar" style="margin-top:auto"><button class="abtn" onclick="noteSum(1)">存私人笔记</button><button class="abtn" onclick="pinSum(this,1)">作为回应置顶</button></div></div>'
     +'<div class="sumcard"><b>二 · 依据编辑与互动记录</b><p style="font-size:13px;margin:8px 0">林默在读者提出指控后，将不确定表述改为确定表达。完整照片不支持“受压制现场”的解读。林默可能主动放大了误解。</p>'
-    +'<div class="gap">来源：版本历史、原照片、互动日志<br>缺口：不能据此断言林默一开始就策划全部事件</div>'
+    +'<div class="gap" id="gap2">来源：版本历史、原照片、互动日志<br>缺口：不能据此断言林默一开始就策划全部事件</div>'
     +'<div class="actionbar" style="margin-top:auto"><button class="abtn" onclick="noteSum(2)">存私人笔记</button><button class="abtn" onclick="pinSum(this,2)">作为回应置顶</button></div></div>'
     +'<div class="sumcard"><b>三 · 依据当前全部材料</b><p style="font-size:13px;margin:8px 0">可确认：措辞逐步加强；配图经过裁剪；原图属于分享会活动；作者曾对推测性评论表示支持。<br>未确认：更具体的文字挪用、修改分工、全部动机。<br>需要更正：把这张照片当作“被迫沉默”的现场证明。</p>'
-    +'<div class="gap">来源：全部已收集材料</div>'
+    +'<div class="gap" id="gap3">来源：全部已收集材料</div>'
     +'<div class="actionbar" style="margin-top:auto"><button class="abtn" onclick="noteSum(3)">存私人笔记</button><button class="abtn" onclick="pinSum(this,3)">作为回应置顶</button></div></div>'
     +'</div>'
     +'<div class="me">“第一份像一个需要保护的人。第二份像一个需要认错的人。第三份……不像任何一种完整的人。”</div>'
@@ -2411,6 +2589,23 @@ function renderAct6Bins(){
   });
   checkSort();
 }
+/* 分拣操作引导：示例条目自动"飞"进盒子（只演示一次） */
+function sortDemo(){
+  var d=$("sortdemo");if(!d||S.sortDemoSeen)return;
+  S.sortDemoSeen=true;
+  d.style.display="block";
+  d.innerHTML='<div class="demochip" id="demochip">三次编辑记录（21:04 → 23:48）</div>'
+    +'<div class="demotip">① 点一张素材 → ② 点一个盒子</div>';
+  later(function(){$("demochip").classList.add("fly");},900);
+  later(function(){
+    var b=$("bin-record");if(b)b.classList.add("ready");
+    var dm=$("demochip");if(dm)dm.classList.add("gone");
+  },2200);
+  later(function(){
+    var b=$("bin-record");if(b)b.classList.remove("ready");
+    var dd=$("sortdemo");if(dd)dd.style.display="none";
+  },3600);
+}
 function checkSort(){
   if(S.sumsUnlocked)return;
   if(Object.keys(S.sortedItems).length>=10){
@@ -2419,6 +2614,13 @@ function checkSort(){
     // 镜子：不判对错，只照见你的选择
     var kn={record:"记录与原件",hearsay:"别人说的",guess:"我的推测"}[S.sortedItems[7]];
     $("sortmirror").innerHTML='<p class="hint fadein" style="margin:10px 2px">你把「页面摘要：作者确认经历被挪用」归到了「'+kn+'」。很多人的第一反应，会把它当成事实。</p>';
+    // 三份摘要的"来源"改为照映玩家的分拣结果
+    var cnt={record:0,hearsay:0,guess:0};
+    for(var si in S.sortedItems)cnt[S.sortedItems[si]]++;
+    var kn2={record:"你亲手查到的记录与原件",hearsay:"别人说的陈述",guess:"你自己的推测"};
+    var g1=$("gap1");if(g1)g1.innerHTML="来源：热门评论区的说法（"+cnt.hearsay+" 条陈述类素材）<br>缺口：没有现场材料，没有活动原稿";
+    var g2=$("gap2");if(g2)g2.innerHTML="来源：版本历史、原照片、互动日志（"+cnt.record+" 条记录类素材）<br>缺口：不能据此断言林默一开始就策划全部事件";
+    var g3=$("gap3");if(g3)g3.innerHTML="来源：你分拣的全部 "+10+" 条素材 —— "+kn2.record+" "+cnt.record+" 条、"+kn2.hearsay+" "+cnt.hearsay+" 条、"+kn2.guess+" "+cnt.guess+" 条";
     toast("分拣完成。三份摘要出现了——现在，看得见它们各自的根基。");
     setTimeout(function(){z.scrollIntoView({behavior:"smooth",block:"start"});},150);
   }
@@ -2462,13 +2664,13 @@ var ACCUSE={cx:685,cy:238};
 var accuseArmed=false;
 function renderAct7(){
   setAct(7,"第七幕 · 在我说出口之前");
-  matCount=0;accuseArmed=false;
+  accuseArmed=false;
   var pins=PINS.map(function(p,i){
     return '<div class="corkpin" id="pin-'+i+'" style="left:'+p.x+'px;top:'+p.y+'px;transform:rotate('+p.r+'deg)" onclick="pinClick('+i+')"><span class="cp-t">'+p.t+'</span>'+p.txt+'</div>';
   }).join("");
   showScreen(
     '<p class="muted mono" style="text-align:right">周五 19:26 · 房间 · 证据板</p>'
-    +'<div class="goal">目标 · 把每条来源，钉到它发生的时间点</div>'
+    +'<div class="goal">目标 · 把每条来源，钉到它发生的时间点</div>'+peekHTML()
     +'<h2>时间线证据板 <span class="muted" style="font-size:13px;font-weight:400">十一枚图钉，一条红线</span></h2>'
     +'<div class="corkwrap"><div class="corkboard" id="corkboard">'
     +'<svg class="corksvg" id="corksvg" width="780" height="520"></svg>'
@@ -2479,16 +2681,17 @@ function renderAct7(){
     +'<div class="puzcard" id="puz1"><div class="ptitle">拼图一 · 谁最早提出了确定指控</div>'
     +'<p class="muted" style="margin:0">在板上完成：拿起红色的“指控”，连到它最早可查的来源便签。连对，红线留下；连错，线弹回来。</p></div>'
     +'<div class="puzcard" id="puz2"><div class="ptitle">拼图二 · 这算几个独立来源</div>'
-    +'<p class="muted" style="margin-bottom:8px">依次点击四张材料卡，把它们归到共同起点。出现四次，不等于四份独立证据。</p>'
-    +'<div id="mats"><span class="matcard" onclick="pickMat(this)">热门评论</span><span class="matcard" onclick="pickMat(this)">作者回复</span><span class="matcard" onclick="pickMat(this)">二次转述</span><span class="matcard" onclick="pickMat(this)">页面摘要</span></div>'
-    +'<div id="mergezone">共同起点：周二 21:26 评论（把转述逐个放回这里）</div><div id="p2msg"></div></div>'
+    +'<p class="muted" style="margin-bottom:8px">同一个说法在四份材料里都出现了。点“追踪来源”，看它们各自是从哪儿抄来的。</p>'
+    +'<div id="mats"><span class="matcard">热门评论</span><span class="matcard">作者回复</span><span class="matcard">二次转述</span><span class="matcard">页面摘要</span></div>'
+    +'<div class="btnrow" style="margin:10px 0"><button class="btn solid" onclick="traceSources()">追踪来源</button></div>'
+    +'<div id="mergezone">共同起点：待追踪</div><div id="p2msg"></div></div>'
     +'<div class="puzcard" id="puz3"><div class="ptitle">拼图三 · 我的经历是否一定是假的</div>'
-    +'<p class="muted" style="margin-bottom:8px">把活动方较早的征集文本和我的个人草稿并排：共同元素只有雨夜、车站、伞。</p>'
-    +'<button class="btn ghost" onclick="p3(1)">据此把自己定为骗子</button>'
-    +'<button class="btn ghost" onclick="p3(2)">放入“仍待核实”</button>'
+    +'<p class="muted" style="margin-bottom:8px">把活动方较早的征集文本和我的个人草稿并排：共同元素只有雨夜、车站、伞。<br>材料到此为止。怎么处置它，你来定——两种做法都不算错。</p>'
+    +'<button class="btn ghost" onclick="p3(1)">先按“我被骗了”往下写</button>'
+    +'<button class="btn ghost" onclick="p3(2)">先标记为“仍待核实”</button>'
     +'<div id="p3msg"></div></div>'
     +'<div class="me" id="act7me" style="display:none">“我还不知道那晚全部发生过什么。但有些事情，已经不能继续说不知道了。”</div>'
-    +'<div class="btnrow"><button class="btn solid" id="act7next" disabled onclick="cineTo(\'幕间 · 三种更坏的读法\',\'十一枚钉子，一条时间线。可盯着这块板子——\',function(){renderFork();})">写一份说明</button><span class="hint" id="act7hint">完成三块拼图后，回应入口开启</span></div>'
+    +'<div class="btnrow"><button class="btn solid" id="act7next" disabled onclick="cineTo(\'幕间 · 换一种讲法\',\'盯着这块板子，我想起三件还没说出口的事。\',function(){renderFork();})">写一份说明</button><span class="hint" id="act7hint">完成三块拼图后，回应入口开启</span></div>'
   );
 }
 function armAccuse(){
@@ -2532,55 +2735,66 @@ function drawString(idx,ok){
     },700);
   }
 }
-var matCount=0;
-function pickMat(el){
-  if(el.classList.contains("merged"))return;
-  el.classList.add("picked");
-  setTimeout(function(){
-    el.classList.remove("picked");el.classList.add("merged");
-    el.textContent=el.textContent+" → 已归源";
-    matCount++;
-    var zone=$("mergezone");
-    zone.classList.add("hot");
-    zone.textContent="共同起点：周二 21:26 评论 · 已收束 "+matCount+"/4";
-    if(matCount>=4){
-      S.puzzles.p2=true;$("puz2").classList.add("done");
-      zone.innerHTML='<b style="color:var(--fact)">四条引用线收束为一条根源线</b><br>重复 4 次 · 独立来源 1';
-      $("p2msg").innerHTML='<div class="me fadein">“他相信我，所以替我下了判断。我看见他这么确定，又觉得自己应该没有记错。”</div>';
-    }
-    checkAct7();
-  },350);
-}
 function p3(n){
+  // 两种处置都成立——差别只在接下来要承担什么
+  S.puzzles.p3=true;S.p3Way=n;$("puz3").classList.add("done");
   if(n===2){
-    S.puzzles.p3=true;$("puz3").classList.add("done");
-    $("p3msg").innerHTML='<p class="hint fadein">正确。现有材料不足以判定具体侵权，也不足以证明个人经历不存在。</p>';
+    $("p3msg").innerHTML='<p class="hint fadein">你在材料上盖了“仍待核实”。<br>代价是：这篇帖子一天不更正，就一天有人替你把它当成事实。</p>';
   }else{
-    $("p3msg").innerHTML='<p class="hint fadein" style="color:var(--conflict)">把转述当证据、把不确定当定罪，正是这次事件里发生的事。再想一想。</p>';
+    $("p3msg").innerHTML='<p class="hint fadein">你决定先按“我被骗了”往下写。<br>代价是：这句话一旦发出去，就等于替所有人下了结论——包括你自己还没查完的部分。</p>';
   }
+  gainClue("E13","未决的一格","雨夜、车站、伞在两份文本里都出现。相似不能证明挪用，也不能证明没有。");
   checkAct7();
 }
 function checkAct7(){
   if(S.puzzles.p1&&S.puzzles.p2&&S.puzzles.p3){
     $("act7next").disabled=false;$("act7me").style.display="block";
     $("act7hint").textContent="三块拼图完成：照片不是争执现场；四次引用源自一处；我确实增强过指控。";
+    gainClue("E12","引用链","四份材料的说法都能追到同一条评论；重复四次，不等于四个独立来源。");
   }
+}
+/* 拼图二：一键追踪来源（四张卡依次归源，自动播放） */
+function traceSources(){
+  if(S.puzzles.p2){toast("引用链已经追到底了。");return;}
+  var cards=$("mats").querySelectorAll(".matcard");
+  var zone=$("mergezone");
+  var i=0;
+  (function step(){
+    if(i>=cards.length){
+      S.puzzles.p2=true;$("puz2").classList.add("done");
+      zone.innerHTML='<b style="color:var(--fact)">四条引用线收束为一条根源线</b><br>重复 4 次 · 独立来源 1';
+      $("p2msg").innerHTML='<div class="me fadein">“他相信我，所以替我下了判断。我看见他这么确定，又觉得自己应该没有记错。”</div>';
+      checkAct7();
+      return;
+    }
+    var el=cards[i];
+    el.classList.add("picked");
+    later(function(){
+      el.classList.remove("picked");el.classList.add("merged");
+      el.textContent=el.textContent+" → 已归源";
+      i++;
+      zone.classList.add("hot");
+      zone.textContent="共同起点：周二 21:26 评论 · 已收束 "+i+"/4";
+      zone.scrollIntoView({behavior:"smooth",block:"nearest"});
+      step();
+    },620);
+  })();
 }
 
 /* ================= 幕间：真相分歧点 ================= */
 function renderFork(){
-  setAct(8,"幕间 · 三种更坏的读法");
+  setAct(8,"幕间 · 还没说出口的事");
   showScreen(
     '<p class="muted mono" style="text-align:right">周五 19:34 · 房间 · 证据板前</p>'
     +'<div class="forkwrap">'
-    +'<div class="me" style="max-width:560px;margin:0 auto 6px">“十一枚钉子，一条时间线。材料都在这了。”<br>“可盯着这块板子，我还有三种更坏的读法——”</div>'
+    +'<div class="me" style="max-width:560px;margin:0 auto 6px">“板子钉完了。可还有三件事，我一直没敢往下想——”<br>“它们都能解释这些材料。也都能推翻它。”</div>'
     +'<div class="forkgrid">'
     +'<div class="forkcard cur" onclick="S.truthBranch=null;cineTo(\'第八幕 · 轮到我了\',\'现在，轮到我说话了。\',function(){renderAct8();})"><div class="fk-line">真相线 · 一</div><div class="fk-q">就按现在的材料，写一份回应</div><div class="fk-d">能核对的，都核对过了。至于动机——也许没有单一的动机。</div></div>'
     +'<div class="forkcard" onclick="cineTo(\'幕外 · 周三 14:22\',\'断片的那三天，我的账号真的没动过吗？\',function(){renderBranchSelf();})"><div class="fk-line">真相线 · 二</div><div class="fk-q">那三天，我的账号真的没动过吗？</div><div class="fk-d">如果断片是块黑布，布底下压着的是什么？</div></div>'
     +'<div class="forkcard" onclick="cineTo(\'幕外 · 照片的背面\',\'他递来的原图，会不会太完整了？\',function(){renderBranchVillain();})"><div class="fk-line">真相线 · 三</div><div class="fk-q">他递来的原图，会不会太完整了？</div><div class="fk-d">一个急着自证的人，为什么恰好备好了全部证据？</div></div>'
     +'<div class="forkcard" onclick="cineTo(\'幕外 · 三个人的那晚\',\'他们三个记得的，是同一个晚上吗？\',function(){renderBranchRashomon();})"><div class="fk-line">真相线 · 四</div><div class="fk-q">他们三个记得的，是同一个晚上吗？</div><div class="fk-d">把同一晚放进三双眼睛里，会看到几种颜色？</div></div>'
     +'</div>'
-    +'<p class="hint" style="text-align:center;margin-top:18px">同一批材料，四种读法。此处决定你看到的是哪一种真相——<br>每条线都自洽，也都只讲对了一部分。通关后，可以回来重走另一条。</p>'
+    +'<p class="hint" style="text-align:center;margin-top:18px">同一堆材料，能讲出四个故事。<br>此处决定你要往下查哪一件——每条线都自洽，也都只讲对了一部分。<br>通关后可以回来，重走另一条。</p>'
     +'</div>'
   );
 }
@@ -2674,7 +2888,7 @@ function renderAct8(){
   showScreen(
     '<div class="atdesk">'
     +'<p class="muted mono" style="text-align:right">周五 19:55 · 书桌前 · 发布编辑器</p>'
-    +'<div class="goal">目标 · 决定我以什么方式回应</div>'
+    +'<div class="goal">目标 · 决定我以什么方式回应</div>'+peekHTML()
     +'<h2>发布编辑器</h2><p class="muted">没有“选择结局”字样。四份模板同时可用，可以返回查证。</p>'
     +tpls
     +'<div id="tpldetail"></div>'
@@ -2889,7 +3103,53 @@ function pullFrag(el){
     $("fragwall").appendChild(hole);
     $("hiddenfinal").style.display="block";
     $("hiddenfinal").className="fadein";
+    later(buildEchoDesk,600);
   },650);
+}
+/* 隐藏幕新交互：回声处理台——更正发出后，旧互动一件件被推回来 */
+var ECHO=[
+  {t:"我给“这就是抄袭”点的赞",d:"周二 21:31 · 公开可见。它被截图引用了 3,000 多次。",
+   opt:[["撤回点赞","你撤回了。它从截图里消失不了，但从此不再属于你。"],["留着","你留下了它。总有一天，会有人拿这张截图来问你。"]]},
+  {t:"我回的“谢谢你替我说出来”",d:"周三 09:16 · 被当成“作者确认”的引语，反复转载。",
+   opt:[["在原帖下说明","你在下面补了一句：我当时没有看完材料。这句话，成了新的引语。"],
+        ["置顶为更正说明","你把它改成了带来源的更正。有人感谢，也有人说你反悔。"]]},
+  {t:"我转发的那张裁剪图",d:"周二 23:50 · 你转的时候，并不知道右边被裁掉了什么。",
+   opt:[["删除转发","你删了。裁掉的那半张，终于没人再替你传播了。"],
+        ["连同完整照片一起重发","你补上了完整的那张。配文只有一句：请看全。"]]}
+];
+function buildEchoDesk(){
+  var f=$("hiddenfinal");if(!f)return;
+  var wrap=document.createElement("div");
+  wrap.id="echodesk";
+  wrap.innerHTML='<div class="card flat" style="max-width:560px;margin:22px auto;text-align:left;background:#FBF9F3">'
+    +'<h3>回声处理台</h3><p class="muted" style="font-size:13px">更正发出去了。接下来推回来的，是我自己留下的三样东西。</p>'
+    +'<div id="echolist"></div>'
+    +'<div id="echodone" style="display:none"><p class="hint">旧互动处理完了。墙上的空格还在——它会一直在。</p>'
+    +'<div class="finalwords" style="margin-top:10px"><b>被很多人相信，不等于被证明。</b><br>包括那些关于我、也被我相信的故事。</div></div></div>';
+  f.appendChild(wrap);
+  var list=$("echolist"),i=0;
+  (function next(){
+    if(i>=ECHO.length){$("echodone").style.display="block";$("echodone").className="fadein";return;}
+    var e=ECHO[i],n=i;
+    var card=document.createElement("div");
+    card.className="echocard fadein";
+    card.innerHTML='<b>'+e.t+'</b><p style="font-size:12.5px;color:var(--ink3);margin:4px 0 8px">'+e.d+'</p>'
+      +'<div class="btnrow">'+e.opt.map(function(o,oi){
+        return '<button class="btn ghost" onclick="echoDo(this,'+n+','+oi+')">'+o[0]+'</button>';
+      }).join("")+'</div><div class="echoR"></div>';
+    list.appendChild(card);
+    card.scrollIntoView({behavior:"smooth",block:"nearest"});
+    i++;
+    later(next,900);
+  })();
+}
+function echoDo(btn,n,oi){
+  var e=ECHO[n],box=btn.parentNode.nextSibling;
+  var btns=btn.parentNode.querySelectorAll(".btn");
+  for(var b=0;b<btns.length;b++){btns[b].disabled=true;btns[b].style.opacity=.5;}
+  btn.style.opacity=1;btn.className="btn";
+  box.innerHTML='<p class="hint fadein" style="color:var(--fact)">'+e.opt[oi][1]+'</p>';
+  S.echoHandled=(S.echoHandled||0)+1;
 }
 
 /* ================= 启动 ================= */
@@ -2899,6 +3159,7 @@ window.addEventListener("load",function(){
     return;
   }
   initAudio();
+  buildCover();
   initRoom();
 });
 </script>
