@@ -8,6 +8,8 @@
 
 **在线直接玩（无需安装）：** https://zzz-qwq.github.io/citogenesis/
 
+**演示视频：** https://zzz-qwq.github.io/citogenesis/demo.mp4
+
 或者本地运行：
 
 - 直接双击 `game/index.html` 用浏览器打开（保持 `assets/` 与 HTML 相对位置不变）；
@@ -31,6 +33,7 @@
 ```
 citogenesis/
 ├─ index.html               跳转页（GitHub Pages 入口 → game/）
+├─ demo.mp4                 演示视频
 ├─ design/                  设计笔记
 │   ├─ design-notes.md      分幕结构、真相线、美术与交互规范
 │   └─ 乌合之帖_流程思维导图.html
